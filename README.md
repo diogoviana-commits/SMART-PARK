@@ -22,7 +22,7 @@ Detalhamento de Backend:
 - Digite e selecione: **Spring Initializr: Generate a Maven Project**.
 - Escolha as opções:
   - **Language**: Java
-  - **Group**: `com.example`
+  - **Group**: `com.smartparkuscs`
   - **Artifact**: `mapbackend`
   - **Dependencies**:
     - Spring Web
