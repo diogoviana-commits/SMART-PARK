@@ -1,16 +1,43 @@
-:root {
-  --verde: #16a34a;
-  --verde-escuro: #14532d;
-  --texto: #1f2937;
-  --texto-suave: #6b7280;
-  --borda: #e5e7eb;
-  --fundo: #f8fafc;
-  --superficie: #ffffff;
-  --sombra: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+/* =============================================================================
+   Smart Park — estilos da interface
 
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  color: var(--texto);
-  background: var(--fundo);
+   Paleta tirada do proprio parque: verde de mata fechada, areia dos caminhos e
+   um terracota de tijolo para o que exige atencao. Nada de cinza-azulado de
+   framework, para a interface nao ter a mesma cara de qualquer painel generico.
+
+   Escrito primeiro para o celular, que e onde o app sera usado de verdade:
+   alguem em pe no parque procurando um banheiro. O layout de duas colunas so
+   aparece a partir de 900px.
+   ============================================================================= */
+
+:root {
+  --mata: #20402f;
+  --mata-clara: #2f5d3f;
+  --folha: #567d4a;
+  --areia: #f2ece1;
+  --areia-escura: #e4dbc9;
+  --papel: #fbf9f4;
+  --tinta: #1a241d;
+  --tinta-fraca: #6a7268;
+  --tijolo: #b4542f;
+  --linha: #d9d1c0;
+  --foco: #8ab06a;
+
+  --raio: 10px;
+  --raio-g: 18px;
+  --sombra-sutil: 0 1px 2px rgba(26, 36, 29, 0.06);
+  --sombra-flutuante: 0 -2px 24px rgba(26, 36, 29, 0.12);
+
+  --fonte-titulo: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --fonte-texto: 'Public Sans', 'Segoe UI', system-ui, sans-serif;
+
+  /* altura do painel recolhido no celular */
+  --peek: 172px;
+
+  font-family: var(--fonte-texto);
+  color: var(--tinta);
+  background: var(--areia);
+  -webkit-text-size-adjust: 100%;
 }
 
 * {
@@ -19,386 +46,806 @@
 
 body {
   margin: 0;
+  overscroll-behavior: none;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
 }
 
 button {
-  font: inherit;
   cursor: pointer;
 }
 
-/* Acessibilidade (RF12): fonte ampliada aplicada a toda a interface */
-body.fonte-grande {
-  font-size: 1.15rem;
+:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
-body.fonte-grande .lateral {
-  width: 420px;
+/* Acessibilidade (RF12): amplia tudo de uma vez, sem quebrar o layout */
+body.fonte-grande {
+  font-size: 1.125rem;
 }
 
 .app {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
 }
+
+/* --------------------------------------------------------------- cabecalho */
 
 .topo {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 20px;
-  background: var(--verde-escuro);
-  color: #fff;
+  gap: 12px;
+  padding: 10px 16px;
+  padding-top: max(10px, env(safe-area-inset-top));
+  background: var(--mata);
+  color: var(--areia);
+  z-index: 1000;
 }
 
-.topo h1 {
-  font-size: 1.15rem;
+.marca {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.marca svg {
+  flex-shrink: 0;
+}
+
+/* Sem min-width: 0 o bloco do nome nao encolhe, empurra o botao para fora da
+   tela e alarga a pagina inteira em telas estreitas. */
+.marca > div {
+  min-width: 0;
+}
+
+.marca h1 {
+  font-family: var(--fonte-titulo);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   margin: 0;
-  letter-spacing: -0.01em;
+  line-height: 1.1;
 }
 
-.topo p {
-  margin: 2px 0 0;
-  font-size: 0.8rem;
-  opacity: 0.85;
+.marca p {
+  margin: 1px 0 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(242, 236, 225, 0.62);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.botao-acessibilidade {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  color: #fff;
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 0.85rem;
+.botao-fonte {
+  margin-left: auto;
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid rgba(242, 236, 225, 0.28);
+  color: inherit;
+  border-radius: 999px;
+  padding: 6px 11px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
-.botao-acessibilidade[aria-pressed='true'] {
-  background: #fff;
-  color: var(--verde-escuro);
+.botao-fonte[aria-pressed='true'] {
+  background: var(--areia);
+  color: var(--mata);
+  border-color: var(--areia);
 }
+
+/* -------------------------------------------------------------------- mapa */
 
 .corpo {
-  display: flex;
+  position: relative;
   flex: 1;
   min-height: 0;
 }
 
-.lateral {
-  width: 360px;
-  flex-shrink: 0;
-  background: var(--superficie);
-  border-right: 1px solid var(--borda);
-  overflow-y: auto;
-  padding: 16px;
-}
-
 .mapa-area {
-  flex: 1;
-  min-width: 0;
-  position: relative;
+  position: absolute;
+  inset: 0;
 }
 
 .leaflet-container {
   height: 100%;
   width: 100%;
+  background: var(--areia-escura);
+  font-family: var(--fonte-texto);
 }
+
+/* Controles do Leaflet alinhados ao resto da interface.
+   No celular o zoom fica escondido: o gesto de pinca resolve e o botao
+   competiria com o painel pelo espaco do polegar. */
+.leaflet-control-zoom {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .leaflet-control-zoom {
+    display: block;
+  }
+}
+
+.leaflet-control-zoom {
+  border: 1px solid var(--linha) !important;
+  border-radius: var(--raio) !important;
+  overflow: hidden;
+  box-shadow: var(--sombra-sutil) !important;
+}
+
+.leaflet-control-zoom a {
+  background: var(--papel) !important;
+  color: var(--mata) !important;
+  border-bottom-color: var(--linha) !important;
+  font-weight: 500;
+}
+
+.leaflet-control-attribution {
+  background: rgba(251, 249, 244, 0.86) !important;
+  font-size: 10px !important;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: var(--raio) !important;
+  box-shadow: var(--sombra-sutil) !important;
+}
+
+.leaflet-popup-content {
+  margin: 10px 14px !important;
+  font-family: var(--fonte-texto);
+  font-size: 0.85rem;
+}
+
+/* ---------------------------------------------------------------- painel */
+
+.painel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  height: 82dvh;
+  background: var(--papel);
+  border-top: 1px solid var(--linha);
+  border-radius: var(--raio-g) var(--raio-g) 0 0;
+  box-shadow: var(--sombra-flutuante);
+  transform: translateY(calc(82dvh - var(--peek)));
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.painel[data-aberto='true'] {
+  transform: translateY(0);
+}
+
+.painel-cabecalho {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding-right: 6px;
+}
+
+.puxador {
+  all: unset;
+  flex: 1;
+  display: grid;
+  place-items: center;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+/* Alca sozinha e facil de ignorar, entao ela vem acompanhada de um botao de
+   fechar visivel quando o painel esta aberto (recomendacao da NN/g). */
+.botao-recolher {
+  all: unset;
+  display: none;
+  min-width: 44px;
+  min-height: 44px;
+  cursor: pointer;
+  color: var(--tinta-fraca);
+  place-items: center;
+}
+
+.painel[data-aberto='true'] .botao-recolher {
+  display: grid;
+}
+
+.puxador span {
+  display: block;
+  width: 38px;
+  height: 4px;
+  margin: 0 auto;
+  border-radius: 2px;
+  background: var(--linha);
+}
+
+.painel-conteudo {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 16px 20px;
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+  -webkit-overflow-scrolling: touch;
+}
+
+/* -------------------------------------------------------------- busca */
 
 .busca {
   display: flex;
+  align-items: center;
   gap: 8px;
+  background: var(--areia);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  padding: 0 10px;
   margin-bottom: 12px;
+}
+
+.busca:focus-within {
+  border-color: var(--folha);
+  background: var(--papel);
+}
+
+.busca svg {
+  color: var(--tinta-fraca);
+  flex-shrink: 0;
 }
 
 .busca input {
   flex: 1;
-  padding: 10px 12px;
-  font: inherit;
-  border: 1px solid var(--borda);
-  border-radius: 8px;
+  min-width: 0;
+  border: none;
+  background: none;
+  padding: 11px 0;
+  font-size: 0.94rem;
 }
 
-.busca input:focus-visible,
-button:focus-visible {
-  outline: 2px solid var(--verde);
-  outline-offset: 2px;
+.busca input:focus {
+  outline: none;
 }
 
+.busca input::-webkit-search-cancel-button {
+  cursor: pointer;
+}
+
+/* ------------------------------------------------------------- filtros */
+
+/* No celular os filtros rolam na horizontal, como em app de mapa de verdade,
+   em vez de virarem quatro linhas de chips empilhados. */
 .filtros {
   display: flex;
-  flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Sangra ate a borda do painel, como nos apps de mapa. O pai tem
+     overflow-x: hidden, entao os 16px extras de cada lado nao vazam. */
+  margin: 0 -16px 10px;
+  padding: 2px 16px;
 }
 
-.chip {
-  border: 1px solid var(--borda);
-  background: var(--superficie);
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-size: 0.82em;
+.filtros::-webkit-scrollbar {
+  display: none;
+}
+
+.filtro {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  border: 1px solid var(--linha);
+  background: var(--papel);
+  color: var(--tinta);
+  border-radius: 999px;
+  padding: 0 14px 0 11px;
+  min-height: 44px;
+  font-size: 0.83em;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
-.chip[aria-pressed='true'] {
+.filtro svg {
+  opacity: 0.85;
+}
+
+.filtro[aria-pressed='true'] {
+  color: var(--papel);
   border-color: transparent;
-  color: #fff;
 }
 
-.chip .bolinha {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  display: inline-block;
+.filtro[data-todos='true'][aria-pressed='true'] {
+  background: var(--mata);
 }
 
-.chip[aria-pressed='true'] .bolinha {
-  background: #fff !important;
+.alternador {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  gap: 8px;
+  font-size: 0.85em;
+  color: var(--tinta-fraca);
+  margin-bottom: 14px;
+  cursor: pointer;
 }
 
-.secao-titulo {
-  font-size: 0.75em;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--texto-suave);
+.alternador input {
+  accent-color: var(--folha);
+  width: 15px;
+  height: 15px;
+}
+
+/* -------------------------------------------------------------- secoes */
+
+.secao {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
   margin: 18px 0 8px;
-  font-weight: 600;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--linha);
 }
 
-.lista-pois {
+.secao h2 {
+  font-family: var(--fonte-titulo);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin: 0;
+  text-transform: uppercase;
+  color: var(--mata);
+}
+
+.secao span {
+  font-size: 0.76rem;
+  color: var(--tinta-fraca);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------- lista de pontos */
+
+.lista {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
 }
 
-.item-poi {
-  width: 100%;
-  text-align: left;
-  border: 1px solid var(--borda);
-  background: var(--superficie);
-  border-radius: 10px;
-  padding: 10px 12px;
+.lista li + li {
+  border-top: 1px solid var(--linha);
+}
+
+.item {
+  all: unset;
   display: flex;
-  gap: 10px;
+  gap: 11px;
   align-items: flex-start;
+  width: 100%;
+  min-height: 44px;
+  padding: 11px 8px;
+  margin: 0 -8px;
+  cursor: pointer;
+  border-radius: var(--raio);
 }
 
-.item-poi:hover {
-  border-color: var(--verde);
+.item:hover {
+  background: var(--areia);
 }
 
-.item-poi.ativo {
-  border-color: var(--verde);
-  background: #f0fdf4;
+.item[aria-current='true'] {
+  background: var(--areia);
+  box-shadow: inset 3px 0 0 var(--folha);
 }
 
-.item-poi .marca {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  margin-top: 6px;
+.selo {
   flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  color: var(--papel);
+  margin-top: 1px;
 }
 
-.item-poi .nome {
+.item-texto {
+  min-width: 0;
+  flex: 1;
+}
+
+.item-nome {
   display: block;
   font-weight: 600;
-  font-size: 0.95em;
+  font-size: 0.93rem;
+  line-height: 1.3;
 }
 
-.item-poi .meta {
+.item-meta {
   display: block;
-  font-size: 0.8em;
-  color: var(--texto-suave);
+  font-size: 0.78rem;
+  color: var(--tinta-fraca);
   margin-top: 2px;
 }
 
-.card-poi {
-  border: 1px solid var(--borda);
-  border-radius: 12px;
-  padding: 14px;
-  background: var(--superficie);
-  box-shadow: var(--sombra);
+.nota {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-variant-numeric: tabular-nums;
+  color: var(--tijolo);
+  font-weight: 600;
 }
 
-.card-poi h3 {
-  margin: 0 0 4px;
-  font-size: 1.02em;
+.vazio {
+  padding: 22px 4px;
+  color: var(--tinta-fraca);
+  font-size: 0.87rem;
+  line-height: 1.5;
 }
 
-.card-poi .categoria {
-  display: inline-block;
-  font-size: 0.75em;
-  color: #fff;
-  padding: 2px 8px;
-  border-radius: 999px;
-  margin-bottom: 8px;
+/* -------------------------------------------------------- card do ponto */
+
+.card {
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--papel);
+  overflow: hidden;
 }
 
-.card-poi p {
-  margin: 6px 0;
-  font-size: 0.88em;
-  color: var(--texto-suave);
-}
-
-.linha-dado {
+.card-topo {
   display: flex;
-  justify-content: space-between;
-  font-size: 0.85em;
-  padding: 4px 0;
-  border-top: 1px solid var(--borda);
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px 14px 11px;
 }
 
-.status-EM_FUNCIONAMENTO {
-  color: #15803d;
-  font-weight: 600;
-}
-
-.status-EM_MANUTENCAO {
-  color: #b45309;
-  font-weight: 600;
-}
-
-.status-FECHADO {
-  color: #b91c1c;
-  font-weight: 600;
-}
-
-.botao-rota {
-  width: 100%;
-  margin-top: 10px;
-  padding: 10px;
-  border: none;
-  border-radius: 8px;
-  background: var(--verde);
-  color: #fff;
-  font-weight: 600;
-}
-
-.botao-rota:disabled {
-  background: #9ca3af;
-  cursor: not-allowed;
-}
-
-.resumo-rota {
-  margin-top: 10px;
-  padding: 10px;
-  border-radius: 8px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  font-size: 0.88em;
-}
-
-.eventos {
-  list-style: none;
-  padding: 0;
+.card h3 {
+  font-family: var(--fonte-titulo);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   margin: 0;
-  display: flex;
-  flex-direction: column;
+  line-height: 1.2;
+}
+
+.card-categoria {
+  font-size: 0.76rem;
+  color: var(--tinta-fraca);
+  margin-top: 2px;
+  display: block;
+}
+
+.card-descricao {
+  margin: 0;
+  padding: 0 14px 12px;
+  font-size: 0.87rem;
+  line-height: 1.5;
+  color: var(--tinta-fraca);
+}
+
+.dados {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 1px;
+  background: var(--linha);
+  border-top: 1px solid var(--linha);
+}
+
+.dado {
+  background: var(--papel);
+  padding: 9px 14px;
+}
+
+.dado dt {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--tinta-fraca);
+  margin: 0 0 2px;
+}
+
+.dado dd {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.estado-EM_FUNCIONAMENTO {
+  color: var(--mata-clara);
+}
+
+.estado-EM_MANUTENCAO {
+  color: var(--tijolo);
+}
+
+.estado-FECHADO {
+  color: #8a3b2a;
+}
+
+.acoes {
+  padding: 12px 14px;
+  border-top: 1px solid var(--linha);
+}
+
+.botao-principal {
+  width: 100%;
+  border: none;
+  border-radius: var(--raio);
+  background: var(--mata);
+  color: var(--areia);
+  font-weight: 600;
+  font-size: 0.93rem;
+  padding: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
 }
 
+.botao-principal:hover:not(:disabled) {
+  background: var(--mata-clara);
+}
+
+.botao-principal:disabled {
+  background: var(--areia-escura);
+  color: var(--tinta-fraca);
+  cursor: not-allowed;
+}
+
+.rota-resumo {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 9px 12px;
+  border-radius: var(--raio);
+  background: var(--areia);
+  border: 1px solid var(--linha);
+  font-size: 0.87rem;
+}
+
+.rota-resumo strong {
+  font-family: var(--fonte-titulo);
+  font-size: 1.1rem;
+  color: var(--mata);
+}
+
+.dica {
+  font-size: 0.78rem;
+  color: var(--tinta-fraca);
+  margin: 8px 0 0;
+  line-height: 1.45;
+}
+
+/* ------------------------------------------------------------- eventos */
+
+.eventos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.eventos li + li {
+  border-top: 1px solid var(--linha);
+}
+
 .evento {
-  border-left: 3px solid var(--verde);
-  padding: 6px 10px;
-  background: var(--superficie);
-  border-radius: 0 8px 8px 0;
-  border-top: 1px solid var(--borda);
-  border-right: 1px solid var(--borda);
-  border-bottom: 1px solid var(--borda);
+  all: unset;
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 8px;
+  margin: 0 -8px;
+  border-radius: var(--raio);
 }
 
-.evento .quando {
-  font-size: 0.78em;
-  color: var(--verde-escuro);
+button.evento {
+  cursor: pointer;
+}
+
+button.evento:hover {
+  background: var(--areia);
+}
+
+.data-bloco {
+  flex-shrink: 0;
+  width: 42px;
+  text-align: center;
+  border-right: 1px solid var(--linha);
+  padding-right: 10px;
+}
+
+.data-bloco .dia {
+  display: block;
+  font-family: var(--fonte-titulo);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--mata);
+}
+
+.data-bloco .mes {
+  display: block;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--tinta-fraca);
+  margin-top: 2px;
+}
+
+.evento-nome {
+  display: block;
   font-weight: 600;
-  text-transform: capitalize;
+  font-size: 0.9rem;
+  line-height: 1.3;
 }
 
-.evento .titulo {
-  font-weight: 600;
-  font-size: 0.92em;
+.evento-meta {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--tinta-fraca);
+  margin-top: 2px;
 }
 
-.evento .onde {
-  font-size: 0.8em;
-  color: var(--texto-suave);
-}
+/* -------------------------------------------------------------- avisos */
 
 .aviso {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
   padding: 10px 12px;
-  border-radius: 8px;
-  font-size: 0.85em;
+  border-radius: var(--raio);
+  font-size: 0.84rem;
+  line-height: 1.45;
   margin-bottom: 12px;
 }
 
-.aviso.erro {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #991b1b;
+.aviso svg {
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
-.aviso.info {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  color: #1e40af;
+.aviso-erro {
+  background: #fbeee9;
+  border: 1px solid #e8c4b4;
+  color: #8a3b2a;
 }
 
-.marcador-poi {
-  background: transparent;
+.aviso-info {
+  background: var(--areia);
+  border: 1px solid var(--linha);
+  color: var(--tinta-fraca);
+}
+
+.aviso button {
+  all: unset;
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
+/* ----------------------------------------------------------- marcadores */
+
+.pino {
+  background: none;
   border: none;
 }
 
-.marcador-poi .pino {
-  width: 22px;
-  height: 22px;
-  border-radius: 50% 50% 50% 0;
+.pino > div {
+  width: 28px;
+  height: 28px;
+  border-radius: 50% 50% 50% 4px;
   transform: rotate(-45deg);
-  border: 2px solid #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  border: 2px solid var(--papel);
+  box-shadow: 0 2px 5px rgba(26, 36, 29, 0.35);
+  display: grid;
+  place-items: center;
 }
 
-.marcador-poi.selecionado .pino {
-  width: 30px;
-  height: 30px;
-  z-index: 500;
+.pino svg {
+  transform: rotate(45deg);
 }
 
-.marcador-usuario {
-  background: transparent;
+.pino[data-ativo='true'] > div {
+  width: 36px;
+  height: 36px;
+  z-index: 600;
+}
+
+.eu-aqui {
+  background: none;
   border: none;
 }
 
-.marcador-usuario .ponto {
-  width: 16px;
-  height: 16px;
-  background: #2563eb;
-  border: 3px solid #fff;
+.eu-aqui > div {
+  width: 15px;
+  height: 15px;
   border-radius: 50%;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.3);
+  background: #2f6fd0;
+  border: 3px solid var(--papel);
+  box-shadow: 0 0 0 4px rgba(47, 111, 208, 0.22);
 }
 
-@media (max-width: 860px) {
+/* ============================================================ desktop === */
+
+@media (min-width: 900px) {
   .corpo {
-    flex-direction: column;
+    display: flex;
   }
 
-  .lateral {
-    width: 100%;
-    max-height: 45vh;
-    border-right: none;
-    border-bottom: 1px solid var(--borda);
+  .painel {
+    position: relative;
+    inset: auto;
+    width: 386px;
+    flex-shrink: 0;
+    height: auto;
+    transform: none;
+    border-top: none;
+    border-left: 1px solid var(--linha);
+    border-radius: 0;
+    box-shadow: none;
+    transition: none;
   }
 
-  body.fonte-grande .lateral {
-    width: 100%;
+  body.fonte-grande .painel {
+    width: 440px;
+  }
+
+  .puxador {
+    display: none;
+  }
+
+  .painel-conteudo {
+    padding: 16px 18px 28px;
   }
 
   .mapa-area {
-    min-height: 55vh;
+    position: relative;
+    flex: 1;
+    inset: auto;
+  }
+
+  .topo {
+    padding: 12px 20px;
+  }
+
+  .marca h1 {
+    font-size: 1.15rem;
+  }
+
+  .filtros {
+    flex-wrap: wrap;
+    overflow: visible;
+    margin: 0 0 10px;
+    padding: 0;
+  }
+
+  .filtro {
+    min-height: 34px;
+  }
+
+  .alternador {
+    min-height: 32px;
+  }
+
+  .painel-cabecalho {
+    display: none;
   }
 }

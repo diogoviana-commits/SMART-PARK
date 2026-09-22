@@ -1,5 +1,10 @@
+import { IconeCategoria } from '../icones.jsx'
+
 /**
- * Chips de filtro por categoria e por acessibilidade (RF06, RF12).
+ * Filtros por categoria e por acessibilidade (RF06, RF12).
+ *
+ * No celular a fila rola na horizontal em vez de empilhar: é o padrão dos apps
+ * de mapa e mantém a lista de pontos visível sem precisar rolar a tela.
  */
 export default function FiltroCategorias({
   categorias,
@@ -10,13 +15,12 @@ export default function FiltroCategorias({
 }) {
   return (
     <>
-      <div className="secao-titulo">Filtrar por categoria</div>
-      <div className="filtros">
+      <div className="filtros" role="group" aria-label="Filtrar por categoria">
         <button
           type="button"
-          className="chip"
+          className="filtro"
+          data-todos="true"
           aria-pressed={categoriaAtiva === null}
-          style={categoriaAtiva === null ? { background: '#14532d' } : undefined}
           onClick={() => aoTrocarCategoria(null)}
         >
           Todos
@@ -28,19 +32,19 @@ export default function FiltroCategorias({
             <button
               key={categoria.slug}
               type="button"
-              className="chip"
+              className="filtro"
               aria-pressed={ativa}
-              style={ativa ? { background: categoria.cor } : undefined}
+              style={ativa ? { background: categoria.cor } : { color: categoria.cor }}
               onClick={() => aoTrocarCategoria(ativa ? null : categoria.slug)}
             >
-              <span className="bolinha" style={{ background: categoria.cor }} />
-              {categoria.nome}
+              <IconeCategoria slug={categoria.slug} tamanho={15} />
+              <span style={ativa ? undefined : { color: 'var(--tinta)' }}>{categoria.nome}</span>
             </button>
           )
         })}
       </div>
 
-      <label className="chip" style={{ cursor: 'pointer' }}>
+      <label className="alternador">
         <input
           type="checkbox"
           checked={somenteAcessiveis}
