@@ -22,12 +22,14 @@ export default function App() {
 
   const [fonteGrande, setFonteGrande] = useState(false)
   const [erro, setErro] = useState(null)
+  // Incrementado pelo botao "Tentar de novo": refaz as buscas sem recarregar a pagina
+  const [tentativa, setTentativa] = useState(0)
 
   // Catalogos que nao mudam com os filtros
   useEffect(() => {
     listarCategorias().then(setCategorias).catch((e) => setErro(e.message))
     listarEventos().then(setEventos).catch((e) => setErro(e.message))
-  }, [])
+  }, [tentativa])
 
   // Recarrega os pontos sempre que um filtro muda (RF06)
   useEffect(() => {
@@ -37,7 +39,7 @@ export default function App() {
         setErro(null)
       })
       .catch((e) => setErro(e.message))
-  }, [buscaAplicada, categoriaAtiva, somenteAcessiveis])
+  }, [buscaAplicada, categoriaAtiva, somenteAcessiveis, tentativa])
 
   // Localizacao do visitante em tempo real (RF04)
   useEffect(() => {
@@ -106,7 +108,19 @@ export default function App() {
 
       <div className="corpo">
         <aside className="lateral">
-          {erro && <div className="aviso erro">{erro}</div>}
+          {erro && (
+            <div className="aviso erro">
+              <div>{erro}</div>
+              <button
+                type="button"
+                className="chip"
+                style={{ marginTop: 8 }}
+                onClick={() => setTentativa((n) => n + 1)}
+              >
+                Tentar de novo
+              </button>
+            </div>
+          )}
           {!posicaoUsuario && (
             <div className="aviso info">
               Permita o acesso à localização para ver sua posição no mapa e calcular rotas.
