@@ -41,4 +41,10 @@ EXPOSE 8080
 #   SPRING_DATASOURCE_URL / MYSQL_USER / MYSQL_PASSWORD
 #   SMARTPARK_JWT_SECRET      (obrigatória em prod: sem ela a aplicação não sobe)
 #   SMARTPARK_CORS_ORIGENS    (domínio do front publicado)
+# A JVM, sozinha, dimensiona a memoria pelo total da maquina, e nao pelo limite
+# do contentor. Em uma instancia de 512 MB (o plano gratuito da Render, por
+# exemplo) ela pediria mais do que existe e o servico morreria por falta de
+# memoria. MaxRAMPercentage a mantem dentro do que foi realmente concedido.
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=70 -XX:+UseSerialGC"
+
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
