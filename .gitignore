@@ -21,3 +21,12 @@ Thumbs.db
 *.local
 .env
 .env.*
+# ...menos o modelo, que precisa ser versionado para o time saber quais
+# variaveis existem
+!.env.example
+
+# Build do frontend copiado para dentro do backend pelo SmartPark.bat
+mapbackend/src/main/resources/static/
+
+# ZIP do repositorio baixado do GitHub, extraido dentro da pasta por engano
+SMART-PARK-main/

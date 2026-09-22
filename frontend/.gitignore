@@ -4,3 +4,6 @@ dist/
 *.local
 .env
 .env.*
+# ...menos o modelo, que precisa ser versionado para o time saber quais
+# variaveis existem
+!.env.example
