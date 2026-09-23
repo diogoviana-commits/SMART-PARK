@@ -12,7 +12,17 @@
 // não é para o visitante achar que está vendo dados ao vivo.
 import { CATEGORIAS_DEMO, eventosDemo, poisDemo } from './dadosDemonstracao.js'
 
-const BASE_API = (import.meta.env.VITE_API_URL ?? '').replace(/\/+$/, '')
+// Endereco da API publicada. Fica no codigo, e nao so em variavel de ambiente,
+// para o site publicado continuar apontando para o lugar certo sem depender de
+// configuracao no painel da Vercel. VITE_API_URL, quando definida, tem
+// precedencia — util para apontar para outra API sem mexer no codigo.
+const API_PUBLICADA = 'https://smartpark-api-kncs.onrender.com'
+
+// Em desenvolvimento o caminho fica relativo, e o proxy do Vite encaminha para
+// a API local; sem isso, rodar localmente falaria com o servidor de producao.
+const BASE_API = import.meta.env.DEV
+  ? ''
+  : (import.meta.env.VITE_API_URL || API_PUBLICADA).replace(/\/+$/, '')
 
 /** A API não está acessível — diferente de ela responder que algo deu errado. */
 class ApiIndisponivel extends Error {}
