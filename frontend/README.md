@@ -22,8 +22,9 @@ npm run preview   # serve o dist/ em localhost:4173, igual ao que vai para produ
 ## Publicando na Vercel
 
 > **A Vercel hospeda apenas o frontend.** Ela não roda Java, então a API precisa estar publicada
-> em outro serviço (Railway, Render, Fly.io — há um `Dockerfile` pronto em `mapbackend/`). Sem a
-> API no ar, o site abre e mostra o mapa, mas sem pontos, eventos nem rotas.
+> em outro serviço — a nossa está na Render, a partir do `Dockerfile` de `mapbackend/`. Sem a API
+> no ar, o mapa continua abrindo com a cópia embutida (ver abaixo), mas entrar e avaliar não
+> funcionam, porque dependem do servidor.
 
 1. **Root Directory**: `frontend` — sem isso a Vercel tenta buildar a raiz do repositório e falha.
 2. **Framework Preset**: Vite (já declarado em `vercel.json`).
@@ -44,8 +45,9 @@ npm run preview   # serve o dist/ em localhost:4173, igual ao que vai para produ
 
    Sem isso o navegador bloqueia todas as chamadas, mesmo com a API no ar.
 
-Como conferir se deu certo: abra o site publicado e veja se a lista mostra "16 pontos". Se aparecer
-o aviso de falha de conexão, o problema está em uma das duas variáveis acima.
+Como conferir se deu certo: abra o site publicado e veja se a lista mostra "33 pontos" **sem** o
+aviso de dados de demonstração. Se o aviso aparecer, o site não está falando com a API, e o
+problema está em uma das duas variáveis acima.
 
 ## Dados de demonstração
 
@@ -57,8 +59,8 @@ ele não tem hospedagem fixa. Assim que a API volta, a tela passa a usar os dado
 Para atualizar a cópia depois de mexer na carga inicial do backend:
 
 ```bash
-# com a API rodando em localhost:8080
-python scripts/gerar-dados-demo.py
+python scripts/gerar-dados-demo.py                    # usa http://localhost:8080
+python scripts/gerar-dados-demo.py http://localhost:9099
 ```
 
 As datas dos eventos são guardadas como deslocamento em dias, e não como data fixa: assim a agenda
@@ -75,6 +77,8 @@ nunca aparece vencida.
 | Card do ponto com horário, situação, acessibilidade e nota | RF07, RF11 |
 | Agenda de eventos (clicar leva ao ponto no mapa) | RF08 |
 | Botão de fonte ampliada | RF12 (parcial) |
+| Criar conta e entrar (token JWT guardado no navegador) | RF01, RF02 |
+| Avaliar o ponto de 1 a 5 estrelas, com comentário | RF11 |
 
 ## Estrutura
 
@@ -89,6 +93,9 @@ src/
     ├── MapaParque.jsx          # mapa, marcadores, posição e linha da rota
     ├── FiltroCategorias.jsx    # filtros por categoria e acessibilidade
     ├── CardPoi.jsx             # card do ponto e botão de rota
+    ├── Avaliacoes.jsx          # notas, comentários e formulário de avaliação
+    ├── Acesso.jsx              # diálogo de entrar / criar conta
+    ├── Conta.jsx               # botão e menu da conta no cabeçalho
     └── PainelEventos.jsx       # agenda
 ```
 
@@ -105,8 +112,11 @@ src/
 
 ## Limitações conhecidas
 
-- **Não há tela de login.** A API já tem cadastro, login com JWT e avaliações, mas a interface
-  ainda não usa nada disso — só as telas de consulta, que são públicas.
+- **Entrar e avaliar exigem o servidor no ar.** Diferente do mapa, essas ações não têm cópia de
+  reserva, de propósito: uma tela que fingisse aceitar um cadastro sem servidor estaria mentindo —
+  a conta não existiria, e a pessoa descobriria isso na próxima vez que tentasse entrar.
+- **Não há "esqueci minha senha"** nem renovação automática do token: depois de 2 h, é preciso
+  entrar de novo.
 - A **geolocalização** só funciona em `localhost` ou HTTPS, exigência dos navegadores. Na Vercel
   isso já vem resolvido; ao testar em rede local por IP, não funciona.
 - Os **tiles do OpenStreetMap** vêm do servidor público, que pede uso moderado. Para um projeto

@@ -10,7 +10,7 @@ Hibernate, que gera as tabelas na primeira execução:
 - **Perfil `dev`** → H2 em memória, recriado a cada execução (`ddl-auto=create-drop`).
 - **Perfil `prod`** → MySQL 8, banco `mapdb` (`ddl-auto=update`).
 
-São **7 tabelas**, já rodando e populadas com 16 pontos, 5 eventos, 6 missões e 1 administrador.
+São **7 tabelas**, já rodando e populadas com 33 pontos, 5 eventos, 6 missões e 1 administrador.
 
 **O ponto mais importante deste documento:** como o Hibernate gera o esquema a partir do código
 Java, um SQL escrito à mão que divirja das entidades quebra a aplicação. Por isso o trabalho não é
@@ -114,7 +114,8 @@ compensa. Índice sem justificativa é peso morto: acelera leitura, atrasa escri
 Hoje o esquema muda sozinho com `ddl-auto=update`, que é cômodo mas perigoso: ele nunca apaga nem
 altera coluna, e ninguém sabe o que mudou entre duas versões. Trocar por **Flyway** significa:
 
-- `src/main/resources/db/migration/V1__esquema_inicial.sql`, `V2__indices.sql`, e assim por diante;
+- `src/main/resources/db/migration/mysql/V1__esquema_inicial.sql`, `V2__indices_de_consulta.sql`,
+  e assim por diante — com o par em `db/migration/postgresql/`, mesmo modelo em outro dialeto;
 - `ddl-auto=validate` no lugar de `update`;
 - histórico de todas as mudanças de banco versionado no Git, junto com o código.
 

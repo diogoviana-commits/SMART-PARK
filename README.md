@@ -10,6 +10,14 @@ A proposta nasceu de uma pesquisa de campo com **68 frequentadores** do parque, 
 eventos (89,7%), a localização de estruturas como banheiros e lanchonetes (76,5%) e os horários de
 funcionamento (75%) apareceram como as informações mais desejadas.
 
+## No ar
+
+| | |
+|---|---|
+| Site | <https://smart-park-eight-puce.vercel.app> |
+| API | <https://smartpark-api-kncs.onrender.com> |
+| Documentação da API | <https://smartpark-api-kncs.onrender.com/swagger-ui/index.html> |
+
 ## Estrutura do repositório
 
 ```
@@ -31,6 +39,16 @@ A interface sobe em <http://localhost:5173> e consome a API em `http://localhost
 (o Vite faz o encaminhamento de `/api`, então não há CORS em desenvolvimento).
 Detalhes em [`frontend/README.md`](frontend/README.md).
 
+## Como rodar o backend
+
+```bash
+cd mapbackend
+mvnw spring-boot:run
+```
+
+Sobe em <http://localhost:8080> com H2 em memória e o parque já carregado — não precisa instalar
+banco nenhum. Detalhes, perfis e segurança em [`mapbackend/README.md`](mapbackend/README.md).
+
 ## API consumida pelo frontend
 
 | Método | Rota | Para que serve |
@@ -41,6 +59,10 @@ Detalhes em [`frontend/README.md`](frontend/README.md).
 | GET | `/api/pois/{id}/rota?lat=&lon=` | Rota a pé, com distância em metros e tempo estimado |
 | GET | `/api/pois/proximos?lat=&lon=&raio=` | Pontos mais próximos da posição informada |
 | GET | `/api/eventos` | Agenda de eventos dos próximos 30 dias |
+| POST | `/api/usuarios` | Cria a conta de visitante (RF01) |
+| POST | `/api/usuarios/login` | Autentica e devolve o token JWT (RF02) |
+| GET | `/api/pois/{id}/avaliacoes` | Notas e comentários de um ponto (RF11) |
+| POST | `/api/pois/{id}/avaliacoes` | Avalia o ponto de 1 a 5 — exige token (RF11) |
 
 ## Tecnologias
 
@@ -49,7 +71,8 @@ Detalhes em [`frontend/README.md`](frontend/README.md).
 | Frontend | JavaScript, React 18, Vite, Leaflet / react-leaflet |
 | Mapa base | OpenStreetMap (sem custo de licença de API) |
 | Backend | Java 17, Spring Boot 3, Spring Data JPA |
-| Banco | H2 em memória (desenvolvimento) e MySQL 8 (produção) |
+| Banco | H2 em memória (desenvolvimento), MySQL 8 ou PostgreSQL 16 (produção) |
+| Publicação | Vercel (site) + Render (API em contêiner Docker) |
 | Versionamento | Git + GitHub |
 
 > **Nota sobre o relatório do PE:** o documento descreve o backend em Python e o banco em

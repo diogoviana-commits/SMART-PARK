@@ -1,7 +1,9 @@
 # Smart Park — Backend (API REST)
 
 API do mapa interativo do **Parque Espaço Verde Chico Mendes**, em São Caetano do Sul.
-Java 17 + Spring Boot 3.3, com H2 em desenvolvimento e MySQL 8 em produção.
+Java 17 + Spring Boot 3.3, com H2 em desenvolvimento e MySQL 8 ou PostgreSQL 16 em produção.
+
+Publicada em <https://smartpark-api-kncs.onrender.com>.
 
 ## Como rodar
 
@@ -9,12 +11,29 @@ Java 17 + Spring Boot 3.3, com H2 em desenvolvimento e MySQL 8 em produção.
 # desenvolvimento: H2 em memória, não precisa instalar banco nenhum
 mvnw spring-boot:run
 
-# produção: MySQL (crie antes o banco com  CREATE DATABASE mapdb;)
+# produção em MySQL (crie antes o banco com  CREATE DATABASE mapdb;)
 mvnw spring-boot:run -Dspring-boot.run.profiles=prod
 ```
 
 A API sobe em <http://localhost:8080>. Na primeira execução o banco é populado com 7 categorias,
-16 pontos de interesse, 5 eventos, 6 missões e um usuário administrador.
+33 pontos de interesse, 5 eventos, 6 missões e um usuário administrador.
+
+### Os quatro perfis
+
+| Perfil | Banco | Para quê |
+|---|---|---|
+| `dev` (padrão) | H2 em memória | Desenvolver sem instalar banco. Console do H2 ligado. |
+| `prod` | MySQL 8 | Produção como descrita no relatório do PE. |
+| `postgres` | PostgreSQL 16 | A mesma produção onde só há PostgreSQL de graça. |
+| `demo` | H2 em memória | Publicar a API sem contratar banco. **Nada persiste.** |
+
+`prod` e `postgres` descrevem o mesmo modelo: as migrações ficam em
+`db/migration/mysql/` e `db/migration/postgresql/`, em dialetos diferentes, com os mesmos nomes de
+tabela, coluna e constraint. Mudou uma, muda a outra — senão os bancos divergem.
+
+Os três perfis que rodam expostos (`prod`, `postgres`, `demo`) exigem `SMARTPARK_JWT_SECRET` para
+subir e só criam o administrador inicial se `SMARTPARK_ADMIN_SENHA` estiver definida. Quem decide
+o que conta como "exposto" é `config/Ambientes.java`, em um lugar só.
 
 | Recurso | Endereço |
 |---|---|
@@ -22,11 +41,12 @@ A API sobe em <http://localhost:8080>. Na primeira execução o banco é populad
 | Especificação OpenAPI (JSON) | <http://localhost:8080/v3/api-docs> |
 | Console do banco H2 (perfil dev) | <http://localhost:8080/h2-console> — JDBC `jdbc:h2:mem:mapdb`, usuário `sa`, sem senha |
 
-Para rodar os testes: `mvnw test` (70 testes, incluindo 18 de controle de acesso).
+Para rodar os testes: `mvnw test` (71 testes, incluindo 19 de controle de acesso).
 
-> **Usuário de demonstração:** `admin@smartpark.uscs` / `smartpark2026`. A senha é conhecida de
-> propósito, para a apresentação em aula. Antes de qualquer publicação real, troque-a ou desligue
-> a carga inicial com `smartpark.carga-inicial=false`.
+> **Usuário de demonstração:** `admin@smartpark.uscs` / `smartpark2026`, **apenas em `dev`**.
+> A senha é conhecida de propósito, para a apresentação em aula — e é justamente por estar neste
+> repositório que os perfis publicados se recusam a criar essa conta: lá a senha tem que vir de
+> `SMARTPARK_ADMIN_SENHA`.
 
 ## Arquitetura em camadas
 
@@ -49,7 +69,7 @@ camada de apresentação.
   │ model/        entidades mapeadas para as tabelas    │
   └─────────────────────────────────────────────────────┘
                           |
-                   H2 (dev) / MySQL (prod)
+       H2 (dev, demo) / MySQL (prod) / PostgreSQL (postgres)
 ```
 
 Complementos:
@@ -180,16 +200,33 @@ Sete tabelas, equivalentes ao modelo físico da Figura 22 do relatório:
 Duas decisões que diferem do documento, e o porquê:
 
 - **Latitude e longitude como números**, em vez do tipo espacial `POINT` com PostGIS. O Leaflet
-  consome lat/lon diretamente, e assim o mesmo código roda igual em H2 e MySQL, sem depender de
-  extensão espacial. Se um dia houver consulta geográfica pesada (área, interseção), vale migrar
-  para PostgreSQL + PostGIS.
+  consome lat/lon diretamente, e assim o mesmo código roda igual em H2, MySQL e PostgreSQL, sem
+  depender de extensão espacial. Se um dia houver consulta geográfica pesada (área, interseção),
+  vale migrar para PostGIS.
 - **Perfil como enum** dentro de `tb_usuario`, em vez de tabela própria. É o que o modelo físico
   do relatório mostra (campo `tipo_perfil`), e são apenas dois valores fixos.
 
+## De onde vêm os 33 pontos
+
+Todas as coordenadas são as do OpenStreetMap para a relação 6746910 (`Espaço Verde Chico Mendes`),
+consultadas pela Overpass API e conferidas contra o polígono do parque: os dois banheiros (um com
+cabine adaptada), os quatro bebedouros, as sete quadras, os quatro playgrounds, os três quiosques
+cobertos, as duas academias ao ar livre, os portões com seus horários (`Mo-Su 06:00-22:00`), o
+bicicletário de 30 vagas, o posto da Guarda Civil e os dois estabelecimentos da calçada. Não são
+estimativas nossas: são objetos que colaboradores do OSM levantaram em campo.
+
+Ficaram de fora os 74 bancos, as 12 lixeiras e as árvores — mobiliário, não destino de navegação —
+e tudo que caiu fora do polígono (a Prefeitura, o complexo de piscinas vizinho, a sede da GCM).
+
+Ainda **não** vêm de levantamento: a agenda de eventos e o `status_operacional` de cada ponto.
+Não existe fonte pública desses dois; são conteúdo de exemplo, e quem administra o parque atualiza
+o status pela API.
+
 ## Pendências
 
-1. **Coordenadas reais** — o parque está georreferenciado pelo OpenStreetMap, mas a posição de
-   cada ponto é aproximada. Precisa de uma visita com GPS. Ver `config/CargaInicial.java`.
+1. **Conferência em campo** — as coordenadas são de levantamento do OSM, não nossas. Uma visita
+   confirmaria o que mudou desde o último mapeamento e preencheria o que ninguém mapeou ainda
+   (horário das lanchonetes, acessibilidade dos bebedouros).
 2. **Rota pelos caminhos do parque** — hoje é linha reta. Trocar por OSRM ou GraphHopper exige
    mexer só em `RotaService`.
 3. **RF09 (estoque dos quiosques)** — não implementado.
