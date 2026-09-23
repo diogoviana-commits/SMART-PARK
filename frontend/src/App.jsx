@@ -170,25 +170,25 @@ export default function App() {
           </div>
         </div>
         <div className="topo-acoes">
-        <Conta
-          sessao={sessao}
-          aoPedirLogin={() => setAcessoAberto(true)}
-          aoSair={() => {
-            sair()
-            setSessao(null)
-          }}
-        />
-        <button
-          type="button"
-          className="botao-fonte"
-          aria-pressed={fonteGrande}
-          onClick={() => setFonteGrande((valor) => !valor)}
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M3 20 8.4 4h2.3L16 20h-2.3l-1.3-4H6.6l-1.3 4H3Zm4.2-6h4.3L9.4 7.6 7.2 14Zm11.3 6v-3.2h-3.2v-1.9h3.2V11.7h1.9v3.2h3.2v1.9h-3.2V20h-1.9Z" />
-          </svg>
-          Fonte
-        </button>
+          <Conta
+            sessao={sessao}
+            aoPedirLogin={() => setAcessoAberto(true)}
+            aoSair={() => {
+              sair()
+              setSessao(null)
+            }}
+          />
+          <button
+            type="button"
+            className="botao-fonte"
+            aria-pressed={fonteGrande}
+            onClick={() => setFonteGrande((valor) => !valor)}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M3 20 8.4 4h2.3L16 20h-2.3l-1.3-4H6.6l-1.3 4H3Zm4.2-6h4.3L9.4 7.6 7.2 14Zm11.3 6v-3.2h-3.2v-1.9h3.2V11.7h1.9v3.2h3.2v1.9h-3.2V20h-1.9Z" />
+            </svg>
+            Fonte
+          </button>
         </div>
       </header>
 
