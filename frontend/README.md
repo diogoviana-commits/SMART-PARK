@@ -47,6 +47,23 @@ npm run preview   # serve o dist/ em localhost:4173, igual ao que vai para produ
 Como conferir se deu certo: abra o site publicado e veja se a lista mostra "16 pontos". Se aparecer
 o aviso de falha de conexão, o problema está em uma das duas variáveis acima.
 
+## Dados de demonstração
+
+O site guarda uma cópia dos pontos e eventos em `src/dadosDemonstracao.js` e a usa **quando a API
+não responde**, mostrando um aviso de "dados de demonstração". Sem isso, o endereço publicado
+mostraria um mapa vazio sempre que o backend estivesse fora do ar — que é o estado normal enquanto
+ele não tem hospedagem fixa. Assim que a API volta, a tela passa a usar os dados reais sozinha.
+
+Para atualizar a cópia depois de mexer na carga inicial do backend:
+
+```bash
+# com a API rodando em localhost:8080
+python scripts/gerar-dados-demo.py
+```
+
+As datas dos eventos são guardadas como deslocamento em dias, e não como data fixa: assim a agenda
+nunca aparece vencida.
+
 ## O que a tela faz
 
 | Recurso | Requisito do PE |

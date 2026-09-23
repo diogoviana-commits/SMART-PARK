@@ -4,7 +4,13 @@ import FiltroCategorias from './components/FiltroCategorias.jsx'
 import CardPoi from './components/CardPoi.jsx'
 import PainelEventos from './components/PainelEventos.jsx'
 import { IconeCategoria } from './icones.jsx'
-import { calcularRota, listarCategorias, listarEventos, listarPois } from './api.js'
+import {
+  calcularRota,
+  emModoDemonstracao,
+  listarCategorias,
+  listarEventos,
+  listarPois,
+} from './api.js'
 
 /** Marca do aplicativo: uma árvore dentro de um alfinete de mapa. */
 function Logotipo() {
@@ -51,6 +57,8 @@ export default function App() {
   const [fonteGrande, setFonteGrande] = useState(false)
   const [erro, setErro] = useState(null)
   const [tentativa, setTentativa] = useState(0)
+  // True quando os dados vieram da copia embutida, por a API nao ter respondido
+  const [demonstracao, setDemonstracao] = useState(false)
 
   useEffect(() => {
     listarCategorias().then(setCategorias).catch((e) => setErro(e.message))
@@ -61,6 +69,7 @@ export default function App() {
     listarPois({ busca: buscaAplicada, categoria: categoriaAtiva, acessivel: somenteAcessiveis })
       .then((resultado) => {
         setPois(resultado)
+        setDemonstracao(emModoDemonstracao())
         setErro(null)
       })
       .catch((e) => setErro(e.message))
@@ -225,7 +234,22 @@ export default function App() {
               </div>
             )}
 
-            {!posicaoUsuario && !erro && (
+            {demonstracao && (
+              <div className="aviso aviso-demo">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm-1 5h2v6h-2V7Zm0 8h2v2h-2v-2Z" />
+                </svg>
+                <div>
+                  Dados de demonstração: o servidor não respondeu, então o mapa está usando uma
+                  cópia salva do parque.{' '}
+                  <button type="button" onClick={() => setTentativa((n) => n + 1)}>
+                    Tentar conectar
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!posicaoUsuario && !erro && !demonstracao && (
               <div className="aviso aviso-info">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z" />

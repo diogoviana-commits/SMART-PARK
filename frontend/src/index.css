@@ -726,6 +726,13 @@ button.evento:hover {
   color: #8a3b2a;
 }
 
+/* Modo demonstracao: precisa ser percebido, sem parecer erro grave */
+.aviso-demo {
+  background: #fbf3e4;
+  border: 1px solid #e3d2ad;
+  color: #7a5a18;
+}
+
 .aviso-info {
   background: var(--areia);
   border: 1px solid var(--linha);
