@@ -10,6 +10,20 @@ function Estrela({ cheia }) {
   )
 }
 
+/**
+ * Média a mostrar no cabeçalho da seção.
+ *
+ * Enquanto a seção está fechada, vale a que veio junto com o ponto. Depois de
+ * aberta, vale a da lista carregada aqui: assim o cabeçalho muda no mesmo
+ * instante em que a avaliação entra na lista, em vez de esperar o mapa
+ * recarregar e ficar dizendo "ainda sem notas" com a nota logo abaixo.
+ */
+function calcularMedia(avaliacoes, mediaDoPonto) {
+  if (avaliacoes === null) return mediaDoPonto // lista ainda não carregada
+  if (avaliacoes.length === 0) return null
+  return avaliacoes.reduce((soma, a) => soma + a.nota, 0) / avaliacoes.length
+}
+
 const DATA = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
 
 function quando(iso) {
@@ -144,12 +158,7 @@ export default function Avaliacoes({ poi, sessao, aoPedirLogin, aoMudar }) {
   // instante em que a avaliacao entra na lista, em vez de esperar o mapa
   // recarregar e ficar dizendo "ainda sem notas" com a nota logo abaixo.
   const total = avaliacoes?.length ?? poi.totalAvaliacoes ?? 0
-  const media =
-    avaliacoes && avaliacoes.length > 0
-      ? avaliacoes.reduce((soma, a) => soma + a.nota, 0) / avaliacoes.length
-      : avaliacoes /* lista vazia carregada */
-        ? null
-        : poi.notaMedia
+  const media = calcularMedia(avaliacoes, poi.notaMedia)
 
   return (
     <section className="avaliacoes">
