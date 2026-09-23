@@ -3,13 +3,18 @@ import MapaParque from './components/MapaParque.jsx'
 import FiltroCategorias from './components/FiltroCategorias.jsx'
 import CardPoi from './components/CardPoi.jsx'
 import PainelEventos from './components/PainelEventos.jsx'
+import Acesso from './components/Acesso.jsx'
+import Conta from './components/Conta.jsx'
 import { IconeCategoria } from './icones.jsx'
 import {
   calcularRota,
+  conferirSessao,
   emModoDemonstracao,
   listarCategorias,
   listarEventos,
   listarPois,
+  sair,
+  sessaoAtual,
 } from './api.js'
 
 /** Marca do aplicativo: uma árvore dentro de um alfinete de mapa. */
@@ -53,6 +58,11 @@ export default function App() {
   const [rota, setRota] = useState(null)
   const [calculandoRota, setCalculandoRota] = useState(false)
 
+  // A sessao comeca com o que estiver salvo no navegador: assim quem ja entrou
+  // nao volta deslogado a cada visita.
+  const [sessao, setSessao] = useState(sessaoAtual)
+  const [acessoAberto, setAcessoAberto] = useState(false)
+
   const [painelAberto, setPainelAberto] = useState(false)
   const [fonteGrande, setFonteGrande] = useState(false)
   const [erro, setErro] = useState(null)
@@ -74,6 +84,13 @@ export default function App() {
       })
       .catch((e) => setErro(e.message))
   }, [buscaAplicada, categoriaAtiva, somenteAcessiveis, tentativa])
+
+  // O token guardado pode ter sido revogado ou o servidor reiniciado: uma
+  // conferencia na abertura evita descobrir isso so na hora de enviar algo.
+  useEffect(() => {
+    if (!sessaoAtual()) return
+    conferirSessao().then(setSessao)
+  }, [])
 
   // Localizacao do visitante em tempo real (RF04)
   useEffect(() => {
@@ -152,6 +169,15 @@ export default function App() {
             <p>Espaço Verde Chico Mendes</p>
           </div>
         </div>
+        <div className="topo-acoes">
+        <Conta
+          sessao={sessao}
+          aoPedirLogin={() => setAcessoAberto(true)}
+          aoSair={() => {
+            sair()
+            setSessao(null)
+          }}
+        />
         <button
           type="button"
           className="botao-fonte"
@@ -163,6 +189,7 @@ export default function App() {
           </svg>
           Fonte
         </button>
+        </div>
       </header>
 
       <div className="corpo">
@@ -277,6 +304,11 @@ export default function App() {
                   calculandoRota={calculandoRota}
                   aoPedirRota={pedirRota}
                   temLocalizacao={Boolean(posicaoUsuario)}
+                  sessao={sessao}
+                  aoPedirLogin={() => setAcessoAberto(true)}
+                  // Uma nota nova muda a media do ponto: recarrega a lista para o
+                  // card e o item da lista mostrarem o mesmo numero.
+                  aoMudarAvaliacao={() => setTentativa((n) => n + 1)}
                 />
               </>
             )}
@@ -337,6 +369,15 @@ export default function App() {
           </div>
         </aside>
       </div>
+
+      <Acesso
+        aberto={acessoAberto}
+        aoFechar={() => setAcessoAberto(false)}
+        aoAutenticar={(nova) => {
+          setSessao(nova)
+          setAcessoAberto(false)
+        }}
+      />
     </div>
   )
 }

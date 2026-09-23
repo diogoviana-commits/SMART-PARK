@@ -200,6 +200,13 @@ body.fonte-grande {
   font-size: 10px !important;
 }
 
+/* O Leaflet poe os controles de baixo em z-index 1000, acima do painel (900):
+   a atribuicao aparecia flutuando por cima do texto do card. Eles pertencem ao
+   mapa, entao devem ficar atras do painel que cobre o mapa. */
+.leaflet-bottom {
+  z-index: 800;
+}
+
 .leaflet-popup-content-wrapper {
   border-radius: var(--raio) !important;
   box-shadow: var(--sombra-sutil) !important;
@@ -855,4 +862,477 @@ button.evento:hover {
   .painel-cabecalho {
     display: none;
   }
+}
+
+/* ================================================================== conta ===
+   Botao de entrar / menu da conta no cabecalho, caixa de acesso e avaliacoes.
+   Mesma paleta do resto: nada de cinza de framework.
+   ========================================================================= */
+
+/* O .botao-fonte tinha margin-left:auto para se empurrar sozinho para a direita.
+   Agora quem empurra e este grupo, senao os dois botoes brigam pelo espaco. */
+.topo-acoes {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.botao-fonte {
+  margin-left: 0;
+}
+
+.botao-conta {
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid rgba(242, 236, 225, 0.28);
+  color: inherit;
+  border-radius: 999px;
+  padding: 6px 11px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.botao-conta:hover {
+  border-color: rgba(242, 236, 225, 0.55);
+}
+
+.botao-conta-logado {
+  padding: 4px 10px 4px 4px;
+}
+
+.avatar {
+  width: 25px;
+  height: 25px;
+  border-radius: 999px;
+  background: var(--areia);
+  color: var(--mata);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.conta-nome {
+  max-width: 7ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conta {
+  position: relative;
+}
+
+.conta-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 1200;
+  min-width: 210px;
+  padding: 12px;
+  border-radius: var(--raio);
+  background: var(--papel);
+  color: var(--tinta);
+  border: 1px solid var(--linha);
+  box-shadow: 0 8px 28px rgba(26, 36, 29, 0.18);
+}
+
+.conta-menu-nome {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.conta-menu-email {
+  margin: 2px 0 10px;
+  font-size: 0.78rem;
+  color: var(--tinta-fraca);
+  word-break: break-all;
+}
+
+.etiqueta {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--areia-escura);
+  color: var(--mata);
+}
+
+.conta-menu button {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--papel);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.conta-menu button:hover {
+  background: var(--areia);
+}
+
+/* ---------------------------------------------------- caixa de acesso --- */
+
+.caixa {
+  border: none;
+  padding: 0;
+  border-radius: var(--raio-g);
+  background: var(--papel);
+  color: var(--tinta);
+  width: min(400px, calc(100vw - 32px));
+  box-shadow: 0 18px 50px rgba(26, 36, 29, 0.28);
+}
+
+.caixa::backdrop {
+  background: rgba(26, 36, 29, 0.45);
+}
+
+.caixa-corpo {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.caixa-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.caixa-topo h2 {
+  font-family: var(--fonte-titulo);
+  font-size: 1.15rem;
+  margin: 0;
+}
+
+/* 44px de alvo, como o resto dos botoes da interface. */
+.caixa-fechar {
+  width: 44px;
+  height: 44px;
+  margin: -12px -12px -12px 0;
+  border: none;
+  background: transparent;
+  color: var(--tinta-fraca);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.caixa-explica {
+  margin: -4px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--tinta-fraca);
+}
+
+.abas {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  background: var(--areia);
+  border-radius: 999px;
+}
+
+.abas button {
+  flex: 1;
+  min-height: 38px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  font-size: 0.83rem;
+  font-weight: 500;
+  color: var(--tinta-fraca);
+}
+
+.abas button[aria-selected='true'] {
+  background: var(--papel);
+  color: var(--tinta);
+  font-weight: 600;
+  box-shadow: var(--sombra-sutil);
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.campo > span {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.campo input,
+.campo textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--papel);
+  font-size: 0.92rem;
+}
+
+.campo textarea {
+  min-height: 62px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.campo input:focus,
+.campo textarea:focus {
+  outline: 2px solid var(--foco);
+  outline-offset: -1px;
+  border-color: var(--foco);
+}
+
+.campo small {
+  font-size: 0.74rem;
+  color: var(--tinta-fraca);
+}
+
+.campo-senha {
+  display: flex;
+  gap: 6px;
+}
+
+.campo-senha input {
+  flex: 1;
+  min-width: 0;
+}
+
+.campo-senha button {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--areia);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--tinta-fraca);
+}
+
+.caixa-erro {
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: var(--raio);
+  background: rgba(180, 84, 47, 0.1);
+  border: 1px solid rgba(180, 84, 47, 0.3);
+  color: #8c3d1f;
+  font-size: 0.83rem;
+  line-height: 1.45;
+}
+
+/* ------------------------------------------------------- avaliacoes --- */
+
+.avaliacoes {
+  border-top: 1px solid var(--linha);
+}
+
+.avaliacoes-abrir {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.87rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.avaliacoes-abrir:hover {
+  background: var(--areia);
+}
+
+.avaliacoes-vazio {
+  font-weight: 400;
+  color: var(--tinta-fraca);
+}
+
+.avaliacoes-corpo {
+  padding: 0 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-avaliacao {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--raio);
+  background: var(--areia);
+}
+
+.form-avaliacao-acoes {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.form-avaliacao-acoes .botao-principal {
+  flex: 1;
+}
+
+.botao-discreto {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--papel);
+  font-size: 0.8rem;
+  color: var(--tinta-fraca);
+  white-space: nowrap;
+}
+
+.botao-discreto:hover:not(:disabled) {
+  color: var(--tijolo);
+  border-color: var(--tijolo);
+}
+
+/* Botao que se comporta como link dentro de uma frase. */
+.link {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--mata-clara);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* --- estrelas: radios de verdade, pintados por cima --- */
+
+.estrelas {
+  border: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+
+.estrelas legend {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0;
+  margin-bottom: 4px;
+}
+
+.estrelas label {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--tinta-fraca);
+}
+
+/* O radio continua no fluxo (recebe foco e teclado); so fica invisivel. */
+.estrelas input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+/* Dourado em todas as estrelas ate a escolhida, nao so na escolhida: a nota e
+   "quatro de cinco", e nao "a quarta". Quem decide quais sao ativas e o
+   componente, porque o CSS nao consegue pintar as irmas ANTERIORES a marcada. */
+.estrelas label.estrela-ativa {
+  color: #c98a1e;
+}
+
+.estrelas label:has(input:focus-visible) {
+  outline: 2px solid var(--foco);
+  border-radius: var(--raio);
+}
+
+.estrelas:disabled label {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.lista-avaliacoes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lista-avaliacoes li {
+  padding: 10px 12px;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--papel);
+}
+
+.avaliacao-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.avaliacao-topo strong {
+  font-size: 0.86rem;
+}
+
+.avaliacao-topo .nota {
+  display: inline-flex;
+  color: #c98a1e;
+}
+
+.lista-avaliacoes p {
+  margin: 6px 0 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.lista-avaliacoes time {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.73rem;
+  color: var(--tinta-fraca);
+}
+
+/* Texto so para leitor de tela: some da vista sem sair da arvore acessivel. */
+.so-leitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

@@ -1,4 +1,5 @@
 import { IconeCategoria } from '../icones.jsx'
+import Avaliacoes from './Avaliacoes.jsx'
 
 const ROTULOS_STATUS = {
   EM_FUNCIONAMENTO: 'Aberto',
@@ -16,9 +17,19 @@ function distanciaLegivel(metros) {
 }
 
 /**
- * Card do ponto selecionado (RF07), com o botão que traça a rota a pé (RF05).
+ * Card do ponto selecionado (RF07), com o botão que traça a rota a pé (RF05) e
+ * as avaliações dos visitantes (RF11).
  */
-export default function CardPoi({ poi, rota, calculandoRota, aoPedirRota, temLocalizacao }) {
+export default function CardPoi({
+  poi,
+  rota,
+  calculandoRota,
+  aoPedirRota,
+  temLocalizacao,
+  sessao,
+  aoPedirLogin,
+  aoMudarAvaliacao,
+}) {
   const rotaDesteponto = rota && rota.destino.id === poi.id ? rota : null
 
   return (
@@ -89,6 +100,13 @@ export default function CardPoi({ poi, rota, calculandoRota, aoPedirRota, temLoc
           </div>
         )}
       </div>
+
+      <Avaliacoes
+        poi={poi}
+        sessao={sessao}
+        aoPedirLogin={aoPedirLogin}
+        aoMudar={aoMudarAvaliacao}
+      />
     </div>
   )
 }
