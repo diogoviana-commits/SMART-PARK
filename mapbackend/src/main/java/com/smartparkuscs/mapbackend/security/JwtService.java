@@ -1,5 +1,6 @@
 package com.smartparkuscs.mapbackend.security;
 
+import com.smartparkuscs.mapbackend.config.Ambientes;
 import com.smartparkuscs.mapbackend.model.Usuario;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -55,8 +56,8 @@ public class JwtService {
         }
         this.chave = Keys.hmacShaKeyFor(bytes);
 
-        // "demo" tambem conta: ele roda exposto na internet igual ao prod.
-        boolean exposto = ambiente.matchesProfiles("prod", "demo");
+        // Vale para todo perfil publicado, nao so prod: ver Ambientes.
+        boolean exposto = Ambientes.exposto(ambiente);
         if (exposto && SEGREDO_PADRAO_DEV.equals(segredo)) {
             // Com o segredo publico qualquer pessoa forjaria um token de administrador.
             throw new IllegalStateException("""

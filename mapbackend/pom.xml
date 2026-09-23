@@ -73,8 +73,9 @@
 
 		<!--
 			Versionamento do esquema do banco. Cada alteracao vira um arquivo em
-			db/migration, aplicado na ordem e registrado na tabela flyway_schema_history.
-			Usado no perfil prod; em dev o H2 e recriado a cada execucao.
+			db/migration/<banco>, aplicado na ordem e registrado na tabela
+			flyway_schema_history. Usado nos perfis prod (MySQL) e postgres; em dev o
+			H2 e recriado a cada execucao.
 		-->
 		<dependency>
 			<groupId>org.flywaydb</groupId>
@@ -83,6 +84,15 @@
 		<dependency>
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-mysql</artifactId>
+		</dependency>
+		<!--
+			O Flyway precisa de um modulo por banco a partir da versao 10. Este e o
+			par do flyway-mysql para o perfil postgres, usado quando a API roda em
+			hospedagem que so oferece PostgreSQL de graca.
+		-->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
 		</dependency>
 
 		<!-- Banco de desenvolvimento: H2 em memoria (perfil dev) -->
@@ -96,6 +106,13 @@
 		<dependency>
 			<groupId>com.mysql</groupId>
 			<artifactId>mysql-connector-j</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- Banco do perfil postgres: mesma aplicacao, outro dialeto -->
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
 			<scope>runtime</scope>
 		</dependency>
 
