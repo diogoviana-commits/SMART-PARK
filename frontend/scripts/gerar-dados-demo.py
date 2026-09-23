@@ -1,11 +1,19 @@
-"""Gera frontend/src/dadosDemonstracao.js a partir da API rodando localmente."""
+"""Gera frontend/src/dadosDemonstracao.js a partir de uma API em execucao.
+
+Uso:
+    python scripts/gerar-dados-demo.py                  # usa http://localhost:8080
+    python scripts/gerar-dados-demo.py http://localhost:9099
+"""
 import io
 import json
+import os
+import sys
 import urllib.request
 from datetime import datetime, date
 
-BASE = "http://localhost:8080"
-import os
+# O endereco vem por argumento para dar para gerar a partir de qualquer
+# instancia - a local em 8080, uma em outra porta, ou a publicada.
+BASE = (sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8080").rstrip("/")
 SAIDA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src", "dadosDemonstracao.js")
 
 

@@ -52,12 +52,12 @@ class PontoInteresseControllerTest {
 
     @Test
     void buscaPorTextoFiltraPeloNome() throws Exception {
-        // "playground" aparece no nome de um ponto e na descricao de outro; ambos devem vir.
+        // A busca varre nome e descricao: os tres playgrounds vem pelo nome.
         mockMvc.perform(get("/api/pois").param("busca", "playground"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[*].nome",
-                        containsInAnyOrder("Playground", "Bebedouro do Playground")));
+                .andExpect(jsonPath("$", hasSize(3)))
+                .andExpect(jsonPath("$[*].nome", containsInAnyOrder(
+                        "Playground do Bosque", "Playground da Alameda", "Playground da Entrada")));
     }
 
     @Test
@@ -80,7 +80,7 @@ class PontoInteresseControllerTest {
         mockMvc.perform(get("/api/pois").param("categoria", "banheiro").param("acessivel", "true"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].nome", is("Banheiro Central")));
+                .andExpect(jsonPath("$[0].nome", is("Banheiro das Quadras")));
     }
 
     @Test
@@ -125,7 +125,7 @@ class PontoInteresseControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()", greaterThan(0)))
                 .andExpect(jsonPath("$[0].nome", is("Caminhada Orientada")))
-                .andExpect(jsonPath("$[0].local", is("Pista de Corrida")));
+                .andExpect(jsonPath("$[0].local", is("Entrada da Avenida Fernando Simonsen")));
     }
 
     @Test

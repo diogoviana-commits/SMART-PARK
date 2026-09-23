@@ -4,8 +4,10 @@ import L from 'leaflet'
 import { svgDaCategoria } from '../icones.jsx'
 
 // Centro do Espaco Verde Chico Mendes segundo o OpenStreetMap.
-// Mantenha igual ao LAT_CENTRO/LON_CENTRO da carga inicial do backend.
-export const CENTRO_PARQUE = [-23.63253, -46.57307]
+// Centro do retangulo que contem os pontos do parque, nao o centroide do
+// poligono: o lado oeste do Espaco Verde e area da Prefeitura, sem pontos
+// mapeados, e centrar nele deixaria metade da tela vazia.
+export const CENTRO_PARQUE = [-23.63216, -46.5723]
 
 /**
  * Marcador em forma de alfinete com o ícone da categoria dentro.

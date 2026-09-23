@@ -32,14 +32,22 @@ import org.springframework.transaction.annotation.Transactional;
  * Popula o banco na primeira execucao com as categorias, pontos e eventos do
  * Parque Espaco Verde Chico Mendes, para o mapa ter conteudo desde o primeiro run.
  *
- * <p>O centro do parque vem do OpenStreetMap (relacao "Espaco Verde Chico Mendes",
- * bbox aproximada lat -23.63447/-23.63057, lon -46.57575/-46.57068), entao os pontos
- * caem dentro da area correta do parque.</p>
+ * <p><strong>De onde vem cada coordenada.</strong> Todas as posicoes abaixo sao as
+ * do OpenStreetMap para a relacao 6746910 ("Espaco Verde Chico Mendes"), consultadas
+ * pela Overpass API. Nao sao estimativas nossas: sao os objetos que colaboradores do
+ * OSM levantaram em campo - os dois banheiros, os quatro bebedouros, as sete quadras,
+ * os playgrounds, os quiosques cobertos, os portoes e seus horarios. Cada ponto foi
+ * conferido contra o poligono do parque, e o que caiu fora (a Prefeitura, o complexo
+ * de piscinas vizinho, a sede da GCM) ficou de fora.</p>
  *
- * <p><strong>Atencao:</strong> a posicao de cada ponto dentro do parque ainda e
- * APROXIMADA: sao deslocamentos em volta do centro, nao medicoes reais. Antes de
- * apresentar, percorra o parque e substitua cada par lat/lon pela leitura do GPS no
- * local. Para mover tudo de uma vez, ajuste {@link #LAT_CENTRO} e {@link #LON_CENTRO}.</p>
+ * <p>Ficam de fora tambem os 74 bancos, as 12 lixeiras e as arvores mapeadas: sao
+ * mobiliario, nao destino de navegacao, e poluiriam o mapa.</p>
+ *
+ * <p><strong>O que ainda nao e levantamento:</strong> a agenda de eventos e exemplo,
+ * e o {@link StatusOperacional} de cada ponto tambem - nao existe fonte publica de
+ * "esta quadra esta em manutencao". Os nomes em portugues sao rotulos nossos, exceto
+ * os de estabelecimentos, que vem do proprio OSM. Para conferir um ponto no mapa:
+ * https://www.openstreetmap.org/#map=18/-23.63196/-46.57236</p>
  */
 @Component
 @ConditionalOnProperty(name = "smartpark.carga-inicial", havingValue = "true", matchIfMissing = true)
@@ -52,9 +60,9 @@ public class CargaInicial implements CommandLineRunner {
     /** Senha usada apenas em desenvolvimento; e publica, pois esta no repositorio. */
     static final String SENHA_ADMIN_PADRAO = "smartpark2026";
 
-    /** Centro do parque conforme OpenStreetMap (Av. Fernando Simonsen, 566, Sao Caetano do Sul). */
-    private static final double LAT_CENTRO = -23.63253;
-    private static final double LON_CENTRO = -46.57307;
+    /** Horario de funcionamento do parque, conforme os portoes no OSM (Mo-Su 06:00-22:00). */
+    private static final LocalTime ABRE = LocalTime.of(6, 0);
+    private static final LocalTime FECHA = LocalTime.of(22, 0);
 
     private final CategoriaPoiRepository categoriaRepository;
     private final PontoInteresseRepository poiRepository;
@@ -124,54 +132,120 @@ public class CargaInicial implements CommandLineRunner {
     }
 
     private void criarPontos(Map<String, CategoriaPoi> cat) {
-        criar("Entrada Principal", "Portao principal do parque, com estacionamento ao lado.",
-                cat.get("entrada"), 0.0009, -0.0011, true, null, null);
-        criar("Entrada Norte", "Acesso secundario, mais proximo do bairro Ceramica.",
-                cat.get("entrada"), -0.0012, 0.0007, true, null, null);
+        // --- Portoes e chegada ------------------------------------------------
+        // Os tres portoes tem horario levantado no OSM (Mo-Su 06:00-22:00) e
+        // wheelchair=yes. Os pontos de onibus nao tem tag de acessibilidade, entao
+        // ficam como nao acessiveis: prometer acessibilidade que ninguem conferiu e
+        // pior do que omitir, porque alguem planeja a ida contando com ela.
+        criar("Entrada da Avenida Fernando Simonsen",
+                "Portao principal para pedestres, com passagem para cadeira de rodas.",
+                cat.get("entrada"), -23.631338, -46.573411, true, ABRE, FECHA);
+        criar("Entrada do Bosque",
+                "Portao de pedestres ao lado da entrada de veiculos.",
+                cat.get("entrada"), -23.631224, -46.573545, true, ABRE, FECHA);
+        criar("Entrada das Quadras",
+                "Portao a leste, o mais proximo das quadras e dos banheiros.",
+                cat.get("entrada"), -23.631844, -46.571956, true, ABRE, FECHA);
+        criar("Ponto de Onibus da Entrada Principal",
+                "Parada coberta e iluminada, em frente ao portao da Avenida Fernando Simonsen.",
+                cat.get("entrada"), -23.631136, -46.572882, false, null, null);
+        criar("Ponto de Onibus das Quadras",
+                "Parada coberta e iluminada, junto a entrada leste.",
+                cat.get("entrada"), -23.631987, -46.571005, false, null, null);
 
-        criar("Banheiro Central", "Banheiro masculino e feminino, com cabine adaptada.",
-                cat.get("banheiro"), 0.0002, -0.0003, true, LocalTime.of(6, 0), LocalTime.of(22, 0));
-        criar("Banheiro da Pista", "Banheiro proximo a pista de corrida.",
-                cat.get("banheiro"), -0.0007, 0.0004, false, LocalTime.of(6, 0), LocalTime.of(22, 0));
+        // --- Banheiros --------------------------------------------------------
+        criar("Banheiro das Quadras",
+                "Banheiro masculino, gratuito, com cabine adaptada para cadeira de rodas.",
+                cat.get("banheiro"), -23.632080, -46.570970, true, ABRE, FECHA);
+        criar("Banheiro do Bosque",
+                "Banheiro feminino, gratuito. Sem cabine adaptada.",
+                cat.get("banheiro"), -23.631817, -46.571753, false, ABRE, FECHA);
 
-        criar("Bebedouro da Praca", "Bebedouro com torneira em altura acessivel.",
-                cat.get("bebedouro"), 0.0004, 0.0002, true, null, null);
-        criar("Bebedouro do Playground", "Bebedouro ao lado da area infantil.",
-                cat.get("bebedouro"), -0.0004, -0.0006, true, null, null);
+        // --- Bebedouros -------------------------------------------------------
+        // Quatro torneiras de agua potavel. Nenhuma tem a altura conferida, por isso
+        // nenhuma aparece no filtro de acessibilidade.
+        criar("Bebedouro das Quadras", "Torneira de agua potavel junto as quadras.",
+                cat.get("bebedouro"), -23.631945, -46.571553, false, null, null);
+        criar("Bebedouro da Academia", "Torneira de agua potavel ao lado dos aparelhos.",
+                cat.get("bebedouro"), -23.631932, -46.572252, false, null, null);
+        criar("Bebedouro dos Jardins", "Torneira de agua potavel no meio dos canteiros.",
+                cat.get("bebedouro"), -23.632153, -46.572451, false, null, null);
+        criar("Bebedouro dos Quiosques", "Torneira de agua potavel perto das mesas cobertas.",
+                cat.get("bebedouro"), -23.631468, -46.572612, false, null, null);
 
-        criar("Lanchonete do Parque", "Salgados, cafe e bebidas geladas.",
-                cat.get("alimentacao"), 0.0006, -0.0002, true, LocalTime.of(8, 0), LocalTime.of(18, 0));
-        criar("Quiosque da Trilha", "Quiosque com agua de coco e sorvetes.",
-                cat.get("alimentacao"), -0.0009, 0.0009, false, LocalTime.of(9, 0), LocalTime.of(17, 0));
+        // --- Alimentacao ------------------------------------------------------
+        // Os dois estabelecimentos existem, tem nome proprio e ficam na calcada da
+        // Avenida Fernando Simonsen, na altura do portao principal. O horario nao
+        // esta levantado no OSM, entao fica em branco em vez de inventado.
+        criar("Gumis Pastelaria",
+                "Pastelaria na calcada do parque, Avenida Fernando Simonsen, 501. Aceita cartao.",
+                cat.get("alimentacao"), -23.631397, -46.572113, true, null, null);
+        criar("Botequim Cacique",
+                "Bar e petiscos na Avenida Fernando Simonsen, 503, ao lado do portao principal.",
+                cat.get("alimentacao"), -23.631423, -46.572034, true, null, null);
 
-        criar("Pista de Corrida", "Circuito de caminhada e corrida ao redor do parque.",
-                cat.get("esporte"), 0.0000, 0.0008, true, LocalTime.of(6, 0), LocalTime.of(22, 0));
-        criar("Quadra Poliesportiva 1", "Quadra para futsal, volei e basquete.",
-                cat.get("esporte"), -0.0005, 0.0011, true, LocalTime.of(8, 0), LocalTime.of(21, 0));
-        criar("Academia ao Ar Livre", "Aparelhos de musculacao e alongamento.",
-                cat.get("esporte"), 0.0008, 0.0006, true, null, null);
+        // --- Esporte ----------------------------------------------------------
+        // Sete quadras de piso de concreto, todas iluminadas, em duas fileiras no
+        // lado leste do parque.
+        criar("Quadra Poliesportiva 1", QUADRA, cat.get("esporte"), -23.632163, -46.571141, false, ABRE, FECHA);
+        criar("Quadra Poliesportiva 2", QUADRA, cat.get("esporte"), -23.632216, -46.571315, false, ABRE, FECHA);
+        criar("Quadra Poliesportiva 3", QUADRA, cat.get("esporte"), -23.632083, -46.571359, false, ABRE, FECHA);
+        criar("Quadra Poliesportiva 4", QUADRA, cat.get("esporte"), -23.632349, -46.571268, false, ABRE, FECHA);
+        criar("Quadra Poliesportiva 5", QUADRA, cat.get("esporte"), -23.632079, -46.571655, false, ABRE, FECHA);
+        criar("Quadra Poliesportiva 6", QUADRA, cat.get("esporte"), -23.632268, -46.571590, false, ABRE, FECHA);
 
-        criar("Playground", "Area infantil com brinquedos e piso emborrachado.",
-                cat.get("lazer"), -0.0003, -0.0008, true, LocalTime.of(7, 0), LocalTime.of(19, 0));
-        criar("Area de Descanso do Lago", "Bancos e sombra com vista para o lago.",
-                cat.get("lazer"), 0.0011, 0.0004, true, null, null);
-        criar("Mirante", "Ponto alto com a melhor vista para fotos.",
-                cat.get("lazer"), -0.0011, -0.0002, false, null, null);
+        PontoInteresse quadraSete = criar("Quadra Poliesportiva 7", QUADRA,
+                cat.get("esporte"), -23.632456, -46.571525, false, ABRE, FECHA);
+        // Exemplo de ponto fora de operacao, para a tela mostrar esse estado. Nao ha
+        // fonte publica de manutencao: quem administra o parque atualiza pela API.
+        quadraSete.setStatusOperacional(StatusOperacional.EM_MANUTENCAO);
+        poiRepository.save(quadraSete);
 
-        criar("Posto de Informacoes", "Apoio ao visitante, achados e perdidos e primeiros socorros.",
-                cat.get("servico"), 0.0003, -0.0009, true, LocalTime.of(8, 0), LocalTime.of(18, 0));
+        criar("Academia ao Ar Livre do Bosque",
+                "Aparelhos de alongamento e musculacao a sombra.",
+                cat.get("esporte"), -23.631817, -46.572241, false, null, null);
+        criar("Academia ao Ar Livre da Alameda",
+                "Segundo conjunto de aparelhos, no lado oeste do parque.",
+                cat.get("esporte"), -23.632351, -46.573672, false, null, null);
 
-        PontoInteresse viveiro = criar("Viveiro de Mudas", "Educacao ambiental e doacao de mudas nativas.",
-                cat.get("servico"), -0.0002, 0.0013, true, LocalTime.of(9, 0), LocalTime.of(16, 0));
-        viveiro.setStatusOperacional(StatusOperacional.EM_MANUTENCAO);
-        poiRepository.save(viveiro);
+        // --- Lazer e descanso -------------------------------------------------
+        criar("Playground do Bosque", "Area infantil aberta ao publico.",
+                cat.get("lazer"), -23.631902, -46.572943, false, ABRE, FECHA);
+        criar("Playground da Alameda", "Area infantil no lado oeste, perto dos quiosques.",
+                cat.get("lazer"), -23.631390, -46.572965, false, ABRE, FECHA);
+        criar("Playground da Entrada", "Area infantil logo apos o portao principal.",
+                cat.get("lazer"), -23.631527, -46.573318, false, ABRE, FECHA);
+        criar("Praca da Agua",
+                "Area infantil com jatos de agua no piso. Iluminada.",
+                cat.get("lazer"), -23.632497, -46.572303, false, ABRE, FECHA);
+        criar("Quiosque Coberto do Lago", "Mesa com bancos e cobertura, junto ao lago.",
+                cat.get("lazer"), -23.631945, -46.572590, false, null, null);
+        criar("Quiosque Coberto do Bosque", "Mesa com bancos e cobertura, sob as arvores.",
+                cat.get("lazer"), -23.631896, -46.572990, false, null, null);
+        criar("Quiosque Coberto da Entrada", "Mesa com bancos e cobertura, perto do portao principal.",
+                cat.get("lazer"), -23.631500, -46.573381, false, null, null);
+        criar("Lago Principal", "Espelho de agua no centro do parque, com caminho ao redor.",
+                cat.get("lazer"), -23.633180, -46.572287, false, null, null);
+        criar("Lago do Bosque", "Segundo espelho de agua, na parte arborizada.",
+                cat.get("lazer"), -23.631631, -46.572840, false, null, null);
+
+        // --- Servicos ---------------------------------------------------------
+        criar("Posto da Guarda Civil Municipal",
+                "Base da Guarda Civil dentro do parque, ao lado do portao principal.",
+                cat.get("servico"), -23.631230, -46.573455, true, null, null);
+        criar("Bicicletario",
+                "Trinta vagas gratuitas em suportes de parede, junto a entrada leste.",
+                cat.get("servico"), -23.631714, -46.571950, true, null, null);
     }
 
+    /** Descricao comum as sete quadras: todas tem o mesmo piso e a mesma iluminacao. */
+    private static final String QUADRA =
+            "Quadra de piso de concreto, iluminada, para futsal, volei e basquete.";
+
     private PontoInteresse criar(String nome, String descricao, CategoriaPoi categoria,
-                                 double deltaLat, double deltaLon, boolean acessivel,
+                                 double latitude, double longitude, boolean acessivel,
                                  LocalTime abertura, LocalTime fechamento) {
-        PontoInteresse poi = new PontoInteresse(nome, descricao, categoria,
-                LAT_CENTRO + deltaLat, LON_CENTRO + deltaLon);
+        PontoInteresse poi = new PontoInteresse(nome, descricao, categoria, latitude, longitude);
         poi.setAcessivel(acessivel);
         poi.setHorarioAbertura(abertura);
         poi.setHorarioFechamento(fechamento);
@@ -180,30 +254,34 @@ public class CargaInicial implements CommandLineRunner {
 
     private void criarEventos() {
         LocalDate hoje = LocalDate.now();
-        PontoInteresse pista = porNome("Pista de Corrida");
+        // Agenda de exemplo: o parque nao publica calendario legivel por maquina, entao
+        // estes cinco eventos servem para a tela de agenda ter conteudo. Cada um e
+        // ancorado em um ponto que existe de verdade, para o mapa levar ao lugar certo.
+        PontoInteresse portao = porNome("Entrada da Avenida Fernando Simonsen");
         PontoInteresse quadra = porNome("Quadra Poliesportiva 1");
-        PontoInteresse viveiro = porNome("Viveiro de Mudas");
-        PontoInteresse lago = porNome("Area de Descanso do Lago");
+        PontoInteresse bosque = porNome("Lago do Bosque");
+        PontoInteresse lago = porNome("Lago Principal");
+        PontoInteresse praca = porNome("Praca da Agua");
 
         eventoRepository.save(new Evento("Caminhada Orientada",
-                "Caminhada guiada de 3 km com alongamento no inicio e no fim.",
-                hoje.plusDays(2).atTime(7, 30), hoje.plusDays(2).atTime(9, 0), pista));
+                "Caminhada guiada de 3 km, com saida no portao principal.",
+                hoje.plusDays(2).atTime(7, 30), hoje.plusDays(2).atTime(9, 0), portao));
 
         eventoRepository.save(new Evento("Torneio de Futsal",
-                "Torneio aberto para equipes do municipio. Inscricao no posto de informacoes.",
+                "Torneio aberto para equipes do municipio. Inscricao no local.",
                 hoje.plusDays(6).atTime(9, 0), hoje.plusDays(6).atTime(17, 0), quadra));
 
         eventoRepository.save(new Evento("Oficina de Plantio",
                 "Oficina de educacao ambiental com doacao de mudas nativas.",
-                hoje.plusDays(9).atTime(10, 0), hoje.plusDays(9).atTime(12, 0), viveiro));
+                hoje.plusDays(9).atTime(10, 0), hoje.plusDays(9).atTime(12, 0), bosque));
 
         eventoRepository.save(new Evento("Cinema ao Ar Livre",
                 "Sessao de cinema para toda a familia. Traga sua canga.",
                 hoje.plusDays(14).atTime(19, 0), hoje.plusDays(14).atTime(21, 30), lago));
 
         eventoRepository.save(new Evento("Feira de Artesanato",
-                "Produtores e artesaos locais expondo no gramado central.",
-                hoje.plusDays(20).atTime(10, 0), hoje.plusDays(20).atTime(18, 0), lago));
+                "Produtores e artesaos locais expondo em volta da praca da agua.",
+                hoje.plusDays(20).atTime(10, 0), hoje.plusDays(20).atTime(18, 0), praca));
     }
 
     private void criarMissoes() {
@@ -241,7 +319,7 @@ public class CargaInicial implements CommandLineRunner {
             return;
         }
 
-        boolean exposto = ambiente.matchesProfiles("prod", "demo");
+        boolean exposto = Ambientes.exposto(ambiente);
         boolean senhaPropria = !SENHA_ADMIN_PADRAO.equals(senhaAdmin);
 
         if (exposto && !senhaPropria) {
