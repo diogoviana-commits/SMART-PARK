@@ -35,6 +35,14 @@ Os três perfis que rodam expostos (`prod`, `postgres`, `demo`) exigem `SMARTPAR
 subir e só criam o administrador inicial se `SMARTPARK_ADMIN_SENHA` estiver definida. Quem decide
 o que conta como "exposto" é `config/Ambientes.java`, em um lugar só.
 
+> **Prazo do banco publicado.** A API no ar usa um PostgreSQL do plano gratuito da Render, que é
+> **apagado 30 dias depois de criado — em 23/10/2026**. Não dá para renovar. Quando vencer, a API
+> deixa de subir e o site volta sozinho para a cópia embutida (o mapa continua, entrar e avaliar
+> não). Para trocar de banco não é preciso mexer em código: aponte `SPRING_DATASOURCE_URL`,
+> `SPRING_DATASOURCE_USERNAME` e `SPRING_DATASOURCE_PASSWORD` para um PostgreSQL novo e vazio, que
+> o Flyway cria o esquema e a carga inicial repovoa o parque. Serviços com plano gratuito sem
+> prazo: Neon e Supabase.
+
 | Recurso | Endereço |
 |---|---|
 | Documentação navegável da API | <http://localhost:8080/swagger-ui/index.html> |
