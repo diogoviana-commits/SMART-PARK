@@ -14,6 +14,9 @@ import { CATEGORIAS_DEMO, eventosDemo, poisDemo } from './dadosDemonstracao.js'
 
 const BASE_API = (import.meta.env.VITE_API_URL ?? '').replace(/\/+$/, '')
 
+/** A API não está acessível — diferente de ela responder que algo deu errado. */
+class ApiIndisponivel extends Error {}
+
 let usandoDemonstracao = false
 
 /** True quando a última consulta veio dos dados embutidos, e não da API. */
@@ -35,10 +38,19 @@ async function pedir(caminho, parametros) {
       // Erro tratado pelo backend: a mensagem já vem pronta para o usuário.
       throw new Error(corpo.mensagem)
     }
-    throw new Error(`Erro ${resposta.status} ao consultar a API.`)
+    // Resposta de erro sem o corpo que a nossa API sempre envia: quem respondeu
+    // não é ela. É o que acontece no site publicado sem VITE_API_URL, em que o
+    // próprio servidor do site devolve 404 para /api.
+    throw new ApiIndisponivel(`A API não respondeu (HTTP ${resposta.status}).`)
   }
 
-  return resposta.json()
+  try {
+    return await resposta.json()
+  } catch {
+    // Respondeu 200, mas não com JSON. Acontece em servidor estático que devolve
+    // o index.html para qualquer rota desconhecida: não é a nossa API.
+    throw new ApiIndisponivel('A API respondeu algo que não é JSON.')
+  }
 }
 
 /**
@@ -53,7 +65,8 @@ async function comReserva(chamada, reserva) {
     usandoDemonstracao = false
     return dados
   } catch (erro) {
-    if (erro instanceof TypeError || String(erro.message).startsWith('Erro 5')) {
+    // TypeError = o fetch nem completou (servidor fora do ar, DNS, CORS).
+    if (erro instanceof ApiIndisponivel || erro instanceof TypeError) {
       usandoDemonstracao = true
       return reserva()
     }
