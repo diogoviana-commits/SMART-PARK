@@ -1,0 +1,47 @@
+# Mantém a API acordada.
+#
+# O plano gratuito da Render hiberna o serviço após 15 minutos sem acesso, e
+# acordar leva cerca de um minuto — o que estragaria uma apresentação. Este
+# fluxo faz uma chamada a cada 10 minutos, então o serviço nunca fica ocioso
+# tempo suficiente para dormir.
+#
+# Cabe no plano gratuito: são 750 horas de instância por mês e o mês tem ~730,
+# então um único serviço ligado o tempo todo continua sem custo.
+#
+# Para ligar: defina a variável API_URL em
+# Settings > Secrets and variables > Actions > Variables,
+# com o endereço da API, por exemplo https://smartpark-api.onrender.com
+# Sem essa variável o fluxo não faz nada, em vez de falhar.
+
+name: Manter a API acordada
+
+on:
+  schedule:
+    # A cada 10 minutos. O GitHub costuma atrasar o disparo em alguns minutos,
+    # o que ainda fica dentro da janela de 15 minutos da Render.
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # permite disparar na mão antes de uma apresentação
+
+jobs:
+  acordar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chamar a API
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          if [ -z "$API_URL" ]; then
+            echo "A variável API_URL não está definida. Nada a fazer."
+            exit 0
+          fi
+
+          # --max-time alto de propósito: se o serviço estiver hibernado, esta
+          # é justamente a chamada que o acorda, e isso leva cerca de 1 minuto.
+          codigo=$(curl -s -o /dev/null -w '%{http_code}' --max-time 120 \
+            "$API_URL/api/categorias")
+
+          echo "GET $API_URL/api/categorias -> HTTP $codigo"
+
+          if [ "$codigo" != "200" ]; then
+            echo "::warning::A API respondeu $codigo em vez de 200."
+          fi
