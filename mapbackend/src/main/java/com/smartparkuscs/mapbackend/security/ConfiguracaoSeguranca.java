@@ -83,6 +83,13 @@ public class ConfiguracaoSeguranca {
                     }
 
                     regras
+                            // Pagina de erro do proprio Spring. Sem liberar isto, um erro
+                            // interno sai como 401 "faca login": o Spring encaminha a
+                            // requisicao que falhou para /error, /error cai no
+                            // anyRequest().authenticated() e a resposta que chega ao
+                            // usuario fala de autenticacao, escondendo o erro de verdade.
+                            .requestMatchers("/error").permitAll()
+
                             // --- publico: o site e a consulta ao mapa ---
                             .requestMatchers(HttpMethod.GET, "/", "/index.html", "/assets/**",
                                     "/favicon.ico", "/*.png", "/*.svg").permitAll()

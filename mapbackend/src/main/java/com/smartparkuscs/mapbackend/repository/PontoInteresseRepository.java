@@ -14,14 +14,23 @@ public interface PontoInteresseRepository extends JpaRepository<PontoInteresse, 
     /**
      * Busca por nome e filtra por categoria e acessibilidade (RF06).
      * Parametros nulos sao ignorados, o que permite combinar os filtros livremente.
+     *
+     * <p>Os {@code cast} nao sao enfeite. Quando um parametro chega nulo, o driver
+     * o envia sem tipo, e o PostgreSQL chuta {@code bytea} - ai
+     * {@code lower(:busca)} vira {@code lower(bytea)}, que nao existe, e a
+     * listagem inteira quebra. O cast diz o tipo antes de o banco precisar
+     * adivinhar. H2 e MySQL aceitam o mesmo SQL, entao a consulta continua
+     * unica para os tres bancos.</p>
      */
     @Query("""
             select p from PontoInteresse p
             join p.categoria c
-            where (:busca is null or lower(p.nome) like lower(concat('%', :busca, '%'))
-                   or lower(coalesce(p.descricao, '')) like lower(concat('%', :busca, '%')))
-              and (:categoria is null or lower(c.slug) = lower(:categoria))
-              and (:acessivel is null or p.acessivel = :acessivel)
+            where (cast(:busca as string) is null
+                   or lower(p.nome) like lower(concat('%', cast(:busca as string), '%'))
+                   or lower(coalesce(p.descricao, '')) like lower(concat('%', cast(:busca as string), '%')))
+              and (cast(:categoria as string) is null
+                   or lower(c.slug) = lower(cast(:categoria as string)))
+              and (cast(:acessivel as boolean) is null or p.acessivel = :acessivel)
             order by p.nome asc
             """)
     List<PontoInteresse> buscar(@Param("busca") String busca,

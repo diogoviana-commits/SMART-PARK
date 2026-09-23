@@ -51,6 +51,19 @@ class SegurancaTest {
 
     // ------------------------------------------------------------ publico ----
 
+    /**
+     * Quando algo estoura dentro da aplicacao, o Spring encaminha a requisicao para
+     * /error. Se esse caminho exigisse login, o erro interno chegaria ao usuario
+     * como "faca login para usar este recurso" - foi o que aconteceu ao rodar a API
+     * contra PostgreSQL pela primeira vez, e levou um bom tempo para descobrir que
+     * o 401 nao tinha nada a ver com autenticacao.
+     */
+    @Test
+    void paginaDeErroNaoPedeLogin() throws Exception {
+        mockMvc.perform(get("/error"))
+                .andExpect(status().is(org.hamcrest.Matchers.not(401)));
+    }
+
     @Test
     void consultarOMapaNaoExigeLogin() throws Exception {
         mockMvc.perform(get("/api/pois")).andExpect(status().isOk());
