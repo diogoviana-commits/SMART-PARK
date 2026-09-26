@@ -53,7 +53,7 @@ jobs:
 
       - name: Guardar o backup
         if: env.PULAR != '1'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backup-banco-${{ github.run_number }}
           path: smartpark.dump.gpg
