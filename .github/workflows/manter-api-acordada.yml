@@ -1,9 +1,9 @@
 # Mantém a API acordada.
 #
 # O plano gratuito da Render hiberna o serviço após 15 minutos sem acesso, e
-# acordar leva cerca de um minuto — o que estragaria uma apresentação. Este
-# fluxo faz uma chamada a cada 10 minutos, então o serviço nunca fica ocioso
-# tempo suficiente para dormir.
+# acordar leva de um a alguns minutos — o que estragaria uma apresentação. Este
+# fluxo pede uma chamada a cada 10 minutos para o serviço não ficar ocioso
+# tempo suficiente para dormir (veja abaixo por que isso nem sempre acontece).
 #
 # Cabe no plano gratuito: são 750 horas de instância por mês e o mês tem ~730,
 # então um único serviço ligado o tempo todo continua sem custo.
@@ -17,14 +17,16 @@ name: Manter a API acordada
 
 on:
   schedule:
-    # A cada 10 minutos. O GitHub costuma atrasar o disparo em alguns minutos,
-    # o que ainda fica dentro da janela de 15 minutos da Render.
+    # A cada 10 minutos, em teoria. Na prática o GitHub segura os agendamentos
+    # e os disparos saem com horas de intervalo, então isto não garante que a
+    # API fique acordada. Antes de uma apresentação, dispare na mão.
     - cron: '*/10 * * * *'
   workflow_dispatch: # permite disparar na mão antes de uma apresentação
 
 jobs:
   acordar:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Chamar a API
         env:
@@ -35,13 +37,24 @@ jobs:
             exit 0
           fi
 
-          # --max-time alto de propósito: se o serviço estiver hibernado, esta
-          # é justamente a chamada que o acorda, e isso leva cerca de 1 minuto.
-          codigo=$(curl -s -o /dev/null -w '%{http_code}' --max-time 120 \
-            "$API_URL/api/categorias")
+          # O GitHub atrasa os disparos agendados em horas, então quase sempre
+          # o serviço já hibernou e esta chamada é a que o acorda. Subir o
+          # Spring Boot na Render gratuita pode passar de 2 minutos, por isso
+          # tenta várias vezes em vez de desistir no primeiro tempo esgotado.
+          # O "|| true" impede que o timeout do curl (código 28) derrube o
+          # passo, já que o bash roda com -e.
+          for tentativa in 1 2 3 4 5; do
+            codigo=$(curl -s -o /dev/null -w '%{http_code}' --max-time 90 \
+              "$API_URL/api/categorias" || true)
 
-          echo "GET $API_URL/api/categorias -> HTTP $codigo"
+            echo "Tentativa $tentativa: GET $API_URL/api/categorias -> HTTP $codigo"
 
-          if [ "$codigo" != "200" ]; then
-            echo "::warning::A API respondeu $codigo em vez de 200."
-          fi
+            if [ "$codigo" = "200" ]; then
+              exit 0
+            fi
+
+            sleep 15
+          done
+
+          echo "::error::A API não respondeu 200 depois de 5 tentativas."
+          exit 1
