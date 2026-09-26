@@ -1,0 +1,59 @@
+# Roda os testes da API e compila o site a cada push e pull request.
+#
+# A Vercel e a Render publicam direto da main, então um commit quebrado vai
+# para o ar sem aviso. Este fluxo marca o commit com ❌ quando algo quebra,
+# e nos pull requests (inclusive os do Dependabot) mostra o resultado antes
+# de juntar.
+
+name: Testes
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  api:
+    name: API (Maven)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: mapbackend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      # O mvnw foi versionado sem permissão de execução (feito no Windows),
+      # por isso a chamada pelo sh.
+      - name: Rodar os testes
+        run: sh ./mvnw -B test
+
+  site:
+    name: Site (Vite)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # Os mesmos comandos que a Vercel usa (veja frontend/vercel.json).
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Compilar
+        run: npm run build
