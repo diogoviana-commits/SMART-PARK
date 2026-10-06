@@ -111,7 +111,9 @@ export async function acordarServidor(aoTentar = () => {}, { tentativas = 12 } =
   for (let tentativa = 1; tentativa <= tentativas; tentativa++) {
     aoTentar(tentativa)
     try {
-      await pedir('/api/saude', { tempoLimite: 20_000 })
+      // Checar o servidor nunca encerra a sessão: um 401 aqui significa só que
+      // quem respondeu não é esta versão da API (por exemplo, durante um deploy).
+      await pedir('/api/saude', { tempoLimite: 20_000, avisarSeExpirar: false })
       return true
     } catch {
       await new Promise((pronto) => setTimeout(pronto, 3_000))
