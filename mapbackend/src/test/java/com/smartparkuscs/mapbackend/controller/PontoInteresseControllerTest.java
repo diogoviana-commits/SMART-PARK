@@ -45,7 +45,8 @@ class PontoInteresseControllerTest {
 
     @Test
     void listaTodosOsPontosDaCargaInicial() throws Exception {
-        mockMvc.perform(get("/api/pois"))
+        mockMvc.perform(get("/api/pois")
+                        .header(HttpHeaders.AUTHORIZATION, tokenAdmin))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()", greaterThan(10)));
     }
@@ -53,7 +54,8 @@ class PontoInteresseControllerTest {
     @Test
     void buscaPorTextoFiltraPeloNome() throws Exception {
         // A busca varre nome e descricao: os tres playgrounds vem pelo nome.
-        mockMvc.perform(get("/api/pois").param("busca", "playground"))
+        mockMvc.perform(get("/api/pois").param("busca", "playground")
+                        .header(HttpHeaders.AUTHORIZATION, tokenAdmin))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(3)))
                 .andExpect(jsonPath("$[*].nome", containsInAnyOrder(
@@ -62,14 +64,16 @@ class PontoInteresseControllerTest {
 
     @Test
     void buscaSemResultadoRetornaListaVazia() throws Exception {
-        mockMvc.perform(get("/api/pois").param("busca", "heliponto"))
+        mockMvc.perform(get("/api/pois").param("busca", "heliponto")
+                        .header(HttpHeaders.AUTHORIZATION, tokenAdmin))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(0)));
     }
 
     @Test
     void filtraPorCategoria() throws Exception {
-        mockMvc.perform(get("/api/pois").param("categoria", "banheiro"))
+        mockMvc.perform(get("/api/pois").param("categoria", "banheiro")
+                        .header(HttpHeaders.AUTHORIZATION, tokenAdmin))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[*].categoria.slug", everyItem(is("banheiro"))));
@@ -77,7 +81,8 @@ class PontoInteresseControllerTest {
 
     @Test
     void filtraPorAcessibilidade() throws Exception {
-        mockMvc.perform(get("/api/pois").param("categoria", "banheiro").param("acessivel", "true"))
+        mockMvc.perform(get("/api/pois").param("categoria", "banheiro").param("acessivel", "true")
+                        .header(HttpHeaders.AUTHORIZATION, tokenAdmin))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].nome", is("Banheiro das Quadras")));
@@ -85,18 +90,20 @@ class PontoInteresseControllerTest {
 
     @Test
     void pontoInexistenteRetorna404ComMensagem() throws Exception {
-        mockMvc.perform(get("/api/pois/999999"))
+        mockMvc.perform(get("/api/pois/999999")
+                        .header(HttpHeaders.AUTHORIZATION, tokenAdmin))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status", is(404)));
     }
 
     @Test
     void rotaTrazDistanciaEDuracao() throws Exception {
-        mockMvc.perform(get("/api/pois/1/rota").param("lat", "-23.6420").param("lon", "-46.5600"))
+        mockMvc.perform(get("/api/pois/1/rota").param("lat", "-23.6420").param("lon", "-46.5600")
+                        .header(HttpHeaders.AUTHORIZATION, tokenAdmin))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.distanciaMetros", greaterThan(0.0)))
                 .andExpect(jsonPath("$.duracaoMinutos", greaterThan(0)))
-                .andExpect(jsonPath("$.pontos", hasSize(2)));
+                .andExpect(jsonPath("$.pontos.length()", greaterThan(2)));
     }
 
     @Test
@@ -121,7 +128,8 @@ class PontoInteresseControllerTest {
 
     @Test
     void agendaDeEventosRetornaProximosEventos() throws Exception {
-        mockMvc.perform(get("/api/eventos"))
+        mockMvc.perform(get("/api/eventos")
+                        .header(HttpHeaders.AUTHORIZATION, tokenAdmin))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()", greaterThan(0)))
                 .andExpect(jsonPath("$[0].nome", is("Caminhada Orientada")))
@@ -130,7 +138,8 @@ class PontoInteresseControllerTest {
 
     @Test
     void categoriasSaoExpostasParaOsFiltros() throws Exception {
-        mockMvc.perform(get("/api/categorias"))
+        mockMvc.perform(get("/api/categorias")
+                        .header(HttpHeaders.AUTHORIZATION, tokenAdmin))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(7)));
     }

@@ -3,6 +3,7 @@ package com.smartparkuscs.mapbackend.dto;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 /**
  * Avaliacao enviada pelo visitante (RF11).
@@ -10,5 +11,7 @@ import jakarta.validation.constraints.NotNull;
  * <p>Nao recebe o id do usuario: quem avaliou e sempre o dono do token. Se viesse no
  * corpo, daria para avaliar em nome de outra pessoa.</p>
  */
-public record AvaliacaoRequest(@NotNull @Min(1) @Max(5) Integer nota, String comentario) {
+public record AvaliacaoRequest(@NotNull @Min(1) @Max(5) Integer nota,
+                               @Size(max = 600, message = "pode ter no maximo 600 caracteres")
+                               String comentario) {
 }

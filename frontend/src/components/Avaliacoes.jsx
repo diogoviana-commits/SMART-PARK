@@ -82,7 +82,7 @@ function EscolherNota({ valor, aoEscolher, desabilitado }) {
  * preenchido com a nota dela e o botão diz "Atualizar", em vez de fingir que
  * seria uma avaliação nova.
  */
-export default function Avaliacoes({ poi, sessao, aoPedirLogin, aoMudar }) {
+export default function Avaliacoes({ poi, sessao, aoMudar }) {
   const [avaliacoes, setAvaliacoes] = useState(null)
   const [erro, setErro] = useState(null)
   const [nota, setNota] = useState(0)
@@ -194,43 +194,34 @@ export default function Avaliacoes({ poi, sessao, aoPedirLogin, aoMudar }) {
             </p>
           )}
 
-          {sessao ? (
-            <form className="form-avaliacao" onSubmit={enviar}>
-              <EscolherNota valor={nota} aoEscolher={setNota} desabilitado={enviando} />
-              <label className="campo">
-                <span>Comentário (opcional)</span>
-                <textarea
-                  rows={2}
-                  maxLength={600}
-                  value={comentario}
-                  placeholder="O que ajudaria quem vier depois?"
-                  onChange={(e) => setComentario(e.target.value)}
-                />
-              </label>
-              <div className="form-avaliacao-acoes">
-                <button type="submit" className="botao-principal" disabled={enviando || !nota}>
-                  {enviando ? 'Enviando…' : minha ? 'Atualizar avaliação' : 'Enviar avaliação'}
+          <form className="form-avaliacao" onSubmit={enviar}>
+            <EscolherNota valor={nota} aoEscolher={setNota} desabilitado={enviando} />
+            <label className="campo">
+              <span>Comentário (opcional)</span>
+              <textarea
+                rows={2}
+                maxLength={600}
+                value={comentario}
+                placeholder="O que ajudaria quem vier depois?"
+                onChange={(e) => setComentario(e.target.value)}
+              />
+            </label>
+            <div className="form-avaliacao-acoes">
+              <button type="submit" className="botao-principal" disabled={enviando || !nota}>
+                {enviando ? 'Enviando…' : minha ? 'Atualizar avaliação' : 'Enviar avaliação'}
+              </button>
+              {minha && (
+                <button
+                  type="button"
+                  className="botao-discreto"
+                  disabled={enviando}
+                  onClick={() => apagar(minha.id)}
+                >
+                  Apagar a minha
                 </button>
-                {minha && (
-                  <button
-                    type="button"
-                    className="botao-discreto"
-                    disabled={enviando}
-                    onClick={() => apagar(minha.id)}
-                  >
-                    Apagar a minha
-                  </button>
-                )}
-              </div>
-            </form>
-          ) : (
-            <p className="dica">
-              <button type="button" className="link" onClick={aoPedirLogin}>
-                Entre na sua conta
-              </button>{' '}
-              para avaliar este ponto.
-            </p>
-          )}
+              )}
+            </div>
+          </form>
 
           {avaliacoes === null && !erro && <p className="dica">Carregando…</p>}
 

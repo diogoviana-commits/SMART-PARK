@@ -45,9 +45,9 @@ jobs:
           # passo, já que o bash roda com -e.
           for tentativa in 1 2 3 4 5; do
             codigo=$(curl -s -o /dev/null -w '%{http_code}' --max-time 90 \
-              "$API_URL/api/categorias" || true)
+              "$API_URL/api/saude" || true)
 
-            echo "Tentativa $tentativa: GET $API_URL/api/categorias -> HTTP $codigo"
+            echo "Tentativa $tentativa: GET $API_URL/api/saude -> HTTP $codigo"
 
             if [ "$codigo" = "200" ]; then
               exit 0

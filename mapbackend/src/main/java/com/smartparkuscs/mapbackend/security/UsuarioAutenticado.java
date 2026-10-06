@@ -19,6 +19,7 @@ public class UsuarioAutenticado implements UserDetails {
     private final String email;
     private final String senhaHash;
     private final String nome;
+    private final int versaoToken;
     private final List<GrantedAuthority> permissoes;
 
     public UsuarioAutenticado(Usuario usuario) {
@@ -26,6 +27,7 @@ public class UsuarioAutenticado implements UserDetails {
         this.email = usuario.getEmail();
         this.senhaHash = usuario.getSenhaHash();
         this.nome = usuario.getNome();
+        this.versaoToken = usuario.getVersaoToken();
         // O Spring Security espera o prefixo ROLE_ para usar hasRole(...)
         this.permissoes = List.of(new SimpleGrantedAuthority("ROLE_" + usuario.getPerfil().name()));
     }
@@ -36,6 +38,10 @@ public class UsuarioAutenticado implements UserDetails {
 
     public String getNome() {
         return nome;
+    }
+
+    public int getVersaoToken() {
+        return versaoToken;
     }
 
     @Override

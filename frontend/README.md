@@ -21,50 +21,23 @@ npm run preview   # serve o dist/ em localhost:4173, igual ao que vai para produ
 
 ## Publicando na Vercel
 
-> **A Vercel hospeda apenas o frontend.** Ela não roda Java, então a API precisa estar publicada
-> em outro serviço — a nossa está na Render, a partir do `Dockerfile` de `mapbackend/`. Sem a API
-> no ar, o mapa continua abrindo com a cópia embutida (ver abaixo), mas entrar e avaliar não
-> funcionam, porque dependem do servidor.
+> **A Vercel hospeda apenas o frontend.** Ela não roda Java: a API está na Render, a partir do
+> `Dockerfile` de `mapbackend/`. Sem a API no ar ninguém entra, porque o mapa exige login.
 
 1. **Root Directory**: `frontend` — sem isso a Vercel tenta buildar a raiz do repositório e falha.
 2. **Framework Preset**: Vite (já declarado em `vercel.json`).
-3. **Environment Variables**: `VITE_API_URL` com a URL pública da API, sem barra no final:
+3. Não há variável de ambiente. O `vercel.json` encaminha `/api/*` para a API na Render
+   (`rewrites`), então o site e a API ficam na **mesma origem**. Isso é obrigatório: a sessão
+   viaja num cookie `HttpOnly` com `SameSite=Strict`, que o navegador não envia para outro
+   domínio. Para trocar o endereço da API, mude o `destination` do rewrite.
 
-   ```
-   VITE_API_URL=https://smartpark-api.up.railway.app
-   ```
+O `vercel.json` também define os cabeçalhos de segurança do site (Content-Security-Policy, HSTS,
+bloqueio de iframe). A política de conteúdo é a mesma de `ConfiguracaoSeguranca.java`; mudou em um,
+mude no outro.
 
-   Essa variável é lida no momento do **build**. Se você alterá-la depois, precisa fazer um novo
-   deploy para o site passar a usar o novo endereço.
-
-4. No backend, defina `SMARTPARK_CORS_ORIGENS` com o domínio da Vercel:
-
-   ```
-   SMARTPARK_CORS_ORIGENS=https://smart-park.vercel.app
-   ```
-
-   Sem isso o navegador bloqueia todas as chamadas, mesmo com a API no ar.
-
-Como conferir se deu certo: abra o site publicado e veja se a lista mostra "33 pontos" **sem** o
-aviso de dados de demonstração. Se o aviso aparecer, o site não está falando com a API, e o
-problema está em uma das duas variáveis acima.
-
-## Dados de demonstração
-
-O site guarda uma cópia dos pontos e eventos em `src/dadosDemonstracao.js` e a usa **quando a API
-não responde**, mostrando um aviso de "dados de demonstração". Sem isso, o endereço publicado
-mostraria um mapa vazio sempre que o backend estivesse fora do ar — que é o estado normal enquanto
-ele não tem hospedagem fixa. Assim que a API volta, a tela passa a usar os dados reais sozinha.
-
-Para atualizar a cópia depois de mexer na carga inicial do backend:
-
-```bash
-python scripts/gerar-dados-demo.py                    # usa http://localhost:8080
-python scripts/gerar-dados-demo.py http://localhost:9099
-```
-
-As datas dos eventos são guardadas como deslocamento em dias, e não como data fixa: assim a agenda
-nunca aparece vencida.
+Como conferir se deu certo: abra o site publicado, entre ou crie uma conta e veja se a lista mostra
+"33 pontos". Na primeira visita do dia a tela avisa que o servidor está ligando — no plano
+gratuito ele hiberna e leva perto de um minuto para acordar.
 
 ## O que a tela faz
 
@@ -72,12 +45,15 @@ nunca aparece vencida.
 |---|---|
 | Mapa com marcadores por categoria, cada um com seu desenho | RF03 |
 | Posição do visitante em tempo real (GPS do navegador) | RF04 |
-| Rota a pé até o ponto escolhido, com distância e tempo | RF05 |
+| Rota a pé pelas trilhas do parque, com distância e tempo que diminuem enquanto se anda | RF05 |
+| Recalcula a rota ao sair do caminho e avisa na chegada; botão para seguir a própria posição | RF05 |
+| Com "Somente pontos acessíveis", a rota desvia das escadas | RF05, RF12 |
 | Busca e filtros por categoria e acessibilidade | RF06 |
 | Card do ponto com horário, situação, acessibilidade e nota | RF07, RF11 |
 | Agenda de eventos (clicar leva ao ponto no mapa) | RF08 |
 | Botão de fonte ampliada | RF12 (parcial) |
-| Criar conta e entrar (token JWT guardado no navegador) | RF01, RF02 |
+| Tela de entrada obrigatória: o mapa só abre depois de entrar ou criar conta | RF01, RF02 |
+| Sessão em cookie HttpOnly (o JavaScript não lê o token); sair encerra em todos os aparelhos | RNF03 |
 | Avaliar o ponto de 1 a 5 estrelas, com comentário | RF11 |
 
 ## Estrutura

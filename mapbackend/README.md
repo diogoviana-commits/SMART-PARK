@@ -37,8 +37,7 @@ o que conta como "exposto" é `config/Ambientes.java`, em um lugar só.
 
 > **Prazo do banco publicado.** A API no ar usa um PostgreSQL do plano gratuito da Render, que é
 > **apagado 30 dias depois de criado — em 23/10/2026**. Não dá para renovar. Quando vencer, a API
-> deixa de subir e o site volta sozinho para a cópia embutida (o mapa continua, entrar e avaliar
-> não). Para trocar de banco não é preciso mexer em código: aponte `SPRING_DATASOURCE_URL`,
+> deixa de subir e, como o mapa exige login, **ninguém consegue entrar no site**. Para trocar de banco não é preciso mexer em código: aponte `SPRING_DATASOURCE_URL`,
 > `SPRING_DATASOURCE_USERNAME` e `SPRING_DATASOURCE_PASSWORD` para um PostgreSQL novo e vazio, que
 > o Flyway cria o esquema e a carga inicial repovoa o parque. Serviços com plano gratuito sem
 > prazo: Neon e Supabase.
@@ -92,7 +91,8 @@ Complementos:
 1. `PontoInteresseController` recebe, converte os parâmetros e chama o serviço.
 2. `PontoInteresseService` busca o ponto; se não existir, lança `RecursoNaoEncontradoException`.
 3. `PontoInteresseRepository` consulta o banco.
-4. `RotaService` calcula distância (fórmula de Haversine) e tempo estimado a pé.
+4. `RotaService` acha o menor caminho pelas trilhas e calçadas do parque (Dijkstra sobre o grafo
+   do OpenStreetMap, ver "Rotas pelos caminhos") e estima o tempo a pé.
 5. `TratadorDeErros` transforma qualquer exceção em uma resposta HTTP com corpo previsível.
 
 ## Requisitos atendidos
@@ -105,7 +105,7 @@ Rastreabilidade entre os requisitos do relatório e o código que os implementa:
 | RF02 – Autenticação | Atendido: login com JWT (falta recuperação de senha) | `AutenticacaoService`, `JwtService` |
 | RF03 – Mapa interativo | Atendido (dados; o mapa em si é do frontend) | `PontoInteresseController.listar` |
 | RF04 – Localização em tempo real | Atendido pelo frontend (GPS do navegador) | — |
-| RF05 – Cálculo de rotas | Atendido (linha reta + tempo estimado) | `RotaService` |
+| RF05 – Cálculo de rotas | Atendido: menor caminho pelas trilhas do OSM, com opção sem escadas | `RotaService`, `GrafoDeTrilhas` |
 | RF06 – Busca e filtros | Atendido | `PontoInteresseRepository.buscar` |
 | RF07 – Card do ponto | Atendido | `PoiResponse` |
 | RF08 – Agenda de eventos | Atendido | `EventoController` |
@@ -114,24 +114,28 @@ Rastreabilidade entre os requisitos do relatório e o código que os implementa:
 | RF11 – Avaliação e feedback | Atendido | `AvaliacaoController` |
 | RF12 – Acessibilidade | Parcial: o dado `acessivel` existe; a interface é do frontend | `PontoInteresse.acessivel` |
 
-**RNF03 (segurança de acesso)** está atendido: senhas com BCrypt, dois perfis, autenticação por
-token JWT e cada endpoint com sua regra de acesso. Ver a seção "Segurança" abaixo.
+**RNF03 (segurança de acesso)** está atendido: o mapa inteiro exige login, senhas com BCrypt e
+política contra senhas fracas, sessão JWT em cookie `HttpOnly`, proteção contra CSRF, saída que
+invalida o token no servidor, dois perfis e cada endpoint com sua regra de acesso. Ver a seção
+"Segurança" abaixo.
 
 ## Principais endpoints
 
 | Método | Rota | Descrição |
 |---|---|---|
+| GET | `/api/saude` | Diz se a API está no ar (público) |
 | GET | `/api/categorias` | Categorias para os filtros do mapa |
 | GET | `/api/pois` | Lista pontos; aceita `busca`, `categoria`, `acessivel` |
 | GET | `/api/pois/{id}` | Card do ponto, com média de estrelas |
 | GET | `/api/pois/proximos` | Pontos próximos a `lat`/`lon` dentro de um `raio` |
-| GET | `/api/pois/{id}/rota` | Rota a pé, com distância e tempo |
+| GET | `/api/pois/{id}/rota` | Rota a pé pelas trilhas; `evitarEscadas=true` desvia das escadas |
 | POST/PUT/DELETE | `/api/pois` | Manutenção dos pontos (administração) |
 | GET/POST | `/api/pois/{id}/avaliacoes` | Avaliações de 1 a 5 estrelas |
 | GET | `/api/eventos` | Agenda; sem parâmetros traz os próximos 30 dias |
 | POST | `/api/usuarios` | Cadastro |
-| POST | `/api/usuarios/login` | Autenticação |
-| GET | `/api/missoes` | Missões; com login traz o progresso de quem está autenticado |
+| POST | `/api/usuarios/login` | Autenticação: abre a sessão em cookie HttpOnly |
+| POST | `/api/usuarios/sair` | Encerra a sessão em todos os aparelhos |
+| GET | `/api/missoes` | Missões, com o progresso de quem está autenticado |
 | POST | `/api/missoes/{id}/progresso` | Registra avanço na missão |
 
 Todos os erros seguem o mesmo formato:
@@ -143,30 +147,34 @@ Todos os erros seguem o mesmo formato:
 
 ## Segurança
 
-A regra geral: **ler o mapa é público, escrever exige login**. Isso vem do próprio relatório, que
-descreve o cadastro como opcional para quem só quer se localizar no parque.
+A regra geral: **tudo exige login**, menos o necessário para conseguir entrar (`/api/saude`,
+cadastro, login e sair). O site também só mostra o mapa depois do login, mas a proteção de verdade
+é esta, no servidor: esconder a tela sem bloquear a API não protegeria nada.
 
 ### Como autenticar
 
+O navegador recebe a sessão num cookie `HttpOnly` e o envia sozinho. Pela linha de comando:
+
 ```bash
-# 1. entrar e receber o token
-curl -X POST http://localhost:8080/api/usuarios/login \
-  -H "Content-Type: application/json" \
+# 1. entrar: o token vem no cookie (o cabecalho X-Requested-With e exigido, ver CSRF abaixo)
+curl -c sessao.txt -X POST http://localhost:8080/api/usuarios/login \
+  -H "Content-Type: application/json" -H "X-Requested-With: SmartPark" \
   -d '{"email":"admin@smartpark.uscs","senha":"smartpark2026"}'
 
-# 2. usar o token nas chamadas seguintes
-curl http://localhost:8080/api/usuarios \
-  -H "Authorization: Bearer <token>"
+# 2. usar o cookie nas chamadas seguintes
+curl -b sessao.txt http://localhost:8080/api/pois
 ```
 
-No Swagger UI, o botão **Authorize** guarda o token e o envia automaticamente.
+O valor do cookie também é aceito no cabeçalho `Authorization: Bearer <token>`, para clientes que
+não são navegador. O Swagger UI só existe no perfil `dev`; nos perfis publicados ele fica
+desligado, para não entregar o mapa da API a quem a ataca.
 
 ### Quem pode o quê
 
 | Ação | Quem pode |
 |---|---|
-| Ver mapa, pontos, rotas, eventos, avaliações e catálogo de missões | Qualquer pessoa, sem login |
-| Criar conta e entrar | Qualquer pessoa |
+| Criar conta, entrar, sair e consultar `/api/saude` | Qualquer pessoa |
+| Ver mapa, pontos, rotas, eventos, avaliações e missões | Visitante autenticado |
 | Avaliar um ponto, registrar progresso em missão, ver a própria conta | Visitante autenticado |
 | Cadastrar, editar e remover pontos de interesse | Administrador |
 | Listar contas e criar outros administradores | Administrador |
@@ -184,8 +192,26 @@ Decisões que valem registrar:
   quais e-mails estão cadastrados.
 - **Login trava após 5 senhas erradas** por 15 minutos (`smartpark.login.*`).
 - **Senhas com BCrypt custo 12** — propositalmente lento, o que encarece a quebra por força bruta.
-- **Sem sessão no servidor**: cada requisição se identifica pelo token, o que também torna o CSRF
-  inaplicável (não há cookie que o navegador reenvie sozinho), por isso ele fica desligado.
+- **Sessão em cookie `HttpOnly`, `Secure`, `SameSite=Strict` e prefixo `__Host-`.** No
+  localStorage, qualquer script da página leria o token: uma falha de XSS entregaria a conta. O
+  cookie o JavaScript não lê. O token não aparece no corpo da resposta do login.
+- **Proteção contra CSRF em duas camadas.** O `SameSite=Strict` impede o navegador de mandar o
+  cookie em requisições vindas de outro site; além disso, toda requisição que altera algo precisa
+  do cabeçalho `X-Requested-With: SmartPark`, que um formulário de outro site não consegue enviar
+  (`ProtecaoCsrf`).
+- **Sair vale no servidor.** Cada token leva a versão da conta (`versao_token`); sair incrementa a
+  versão e todo token anterior para de funcionar na hora, em todos os aparelhos — inclusive uma
+  cópia roubada.
+- **Política de senha (NIST SP 800-63B):** mínimo de 8 caracteres, máximo de 72 bytes (o limite do
+  BCrypt, que ignoraria o resto em silêncio), bloqueio das senhas mais comuns e de senhas que
+  contenham o nome ou o e-mail.
+- **Limites de tamanho** em todos os campos de texto, iguais às colunas do banco: nada estoura como
+  erro 500.
+- **Cabeçalhos de segurança:** Content-Security-Policy (só scripts do próprio site), HSTS,
+  `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` (só o site pede localização) e
+  bloqueio de iframe. Os mesmos valem no site da Vercel (`frontend/vercel.json`).
+- **Mesma origem.** O site chama `/api` no próprio domínio e a Vercel encaminha para a Render. O
+  CORS fica restrito e sem credenciais: outro domínio não consegue usar a sessão de ninguém.
 
 ### Segredo do token
 
@@ -235,8 +261,24 @@ o status pela API.
 1. **Conferência em campo** — as coordenadas são de levantamento do OSM, não nossas. Uma visita
    confirmaria o que mudou desde o último mapeamento e preencheria o que ninguém mapeou ainda
    (horário das lanchonetes, acessibilidade dos bebedouros).
-2. **Rota pelos caminhos do parque** — hoje é linha reta. Trocar por OSRM ou GraphHopper exige
-   mexer só em `RotaService`.
-3. **RF09 (estoque dos quiosques)** — não implementado.
-4. **Recuperação de senha por e-mail** (parte do RF02).
-5. **Refresh token** — hoje, ao expirar (2 h), é preciso fazer login de novo.
+2. **RF09 (estoque dos quiosques)** — não implementado.
+3. **Recuperação de senha e confirmação de e-mail** (parte do RF02). Sem envio de e-mail, o
+   cadastro ainda responde "e-mail já cadastrado", o que permite descobrir se um e-mail tem conta.
+4. **Refresh token** — hoje, ao expirar (2 h), é preciso fazer login de novo.
+5. **Limite de tentativas por IP.** O bloqueio atual é por conta (5 senhas erradas travam aquele
+   e-mail). Quem testa uma senha em muitos e-mails diferentes não é barrado; isso pede um limite
+   por IP, que só é confiável atrás de um proxy que informe o IP real.
+
+## Rotas pelos caminhos
+
+A rota segue as trilhas, calçadas, escadas e ruas mapeadas no OpenStreetMap em volta do parque, e
+não a linha reta. O grafo fica em `src/main/resources/trilhas/chico-mendes.json` (cerca de 4.200
+pontos e 4.700 trechos) e o `GrafoDeTrilhas` calcula o menor caminho com Dijkstra, preferindo as
+trilhas do parque às calçadas das avenidas. Com `evitarEscadas=true` a rota desvia das escadas.
+
+O arquivo é versionado para a API não depender de um serviço externo para subir. Para atualizar
+depois que o mapa do OSM mudar:
+
+```bash
+python scripts/gerar-trilhas.py
+```

@@ -87,7 +87,8 @@ class AvaliacaoControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.nota", is(4)));
 
-        mockMvc.perform(get("/api/pois/5/avaliacoes"))
+        mockMvc.perform(get("/api/pois/5/avaliacoes")
+                        .header(HttpHeaders.AUTHORIZATION, sessao.autorizacao()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.usuarioId == %d)]".formatted(sessao.id()), hasSize(1)));
     }
@@ -99,7 +100,8 @@ class AvaliacaoControllerTest {
                         .contentType(MediaType.APPLICATION_JSON).content(corpo(4, "Boa comida")))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/api/pois/7"))
+        mockMvc.perform(get("/api/pois/7")
+                        .header(HttpHeaders.AUTHORIZATION, sessao.autorizacao()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.notaMedia", is(4.0)))
                 .andExpect(jsonPath("$.totalAvaliacoes", is(1)));
@@ -107,15 +109,18 @@ class AvaliacaoControllerTest {
 
     @Test
     void pontoSemAvaliacaoTrazMediaNula() throws Exception {
-        mockMvc.perform(get("/api/pois/14"))
+        mockMvc.perform(get("/api/pois/14")
+                        .header(HttpHeaders.AUTHORIZATION, sessao.autorizacao()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.notaMedia").doesNotExist())
                 .andExpect(jsonPath("$.totalAvaliacoes", is(0)));
     }
 
     @Test
-    void listarAvaliacoesEPublico() throws Exception {
-        mockMvc.perform(get("/api/pois/3/avaliacoes")).andExpect(status().isOk());
+    void listarAvaliacoesExigeLogin() throws Exception {
+        mockMvc.perform(get("/api/pois/3/avaliacoes")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/pois/3/avaliacoes")
+                        .header(HttpHeaders.AUTHORIZATION, sessao.autorizacao())).andExpect(status().isOk());
     }
 
     @Test

@@ -734,12 +734,6 @@ button.evento:hover {
 }
 
 /* Modo demonstracao: precisa ser percebido, sem parecer erro grave */
-.aviso-demo {
-  background: #fbf3e4;
-  border: 1px solid #e3d2ad;
-  color: #7a5a18;
-}
-
 .aviso-info {
   background: var(--areia);
   border: 1px solid var(--linha);
@@ -1335,4 +1329,292 @@ button.evento:hover {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+/* ================================================================ entrada ===
+   Tela de entrar / criar conta. O mapa so aparece depois dela.
+   ========================================================================= */
+
+.entrada {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--mata);
+}
+
+.entrada-marca {
+  padding: calc(28px + env(safe-area-inset-top)) 24px 26px;
+  color: var(--areia);
+}
+
+.entrada-marca h1 {
+  font-family: var(--fonte-titulo);
+  font-size: 1.9rem;
+  line-height: 1.1;
+  margin: 12px 0 2px;
+}
+
+.entrada-marca > p {
+  margin: 0;
+  opacity: 0.8;
+  font-size: 0.95rem;
+}
+
+.entrada-destaques {
+  display: none;
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+}
+
+.entrada-destaques li {
+  position: relative;
+  padding-left: 22px;
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+  opacity: 0.9;
+}
+
+.entrada-destaques li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.45em;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--foco);
+}
+
+.entrada-cartao {
+  flex: 1;
+  background: var(--papel);
+  border-radius: var(--raio-g) var(--raio-g) 0 0;
+  padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+}
+
+.entrada-form {
+  max-width: 400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.entrada-form h2 {
+  font-family: var(--fonte-titulo);
+  font-size: 1.4rem;
+  margin: 0;
+}
+
+.entrada-aviso {
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: var(--raio);
+  background: #fbf3e4;
+  border: 1px solid #e3d2ad;
+  color: #7a5a18;
+  font-size: 0.83rem;
+}
+
+.entrada-situacao {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--tinta-fraca);
+}
+
+.entrada-situacao-erro {
+  color: #8c3d1f;
+}
+
+.ponto-status {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #c9a227;
+}
+
+.entrada-situacao-ok .ponto-status {
+  background: var(--folha);
+}
+
+.ponto-status-pulsando {
+  animation: pulsar 1.4s ease-in-out infinite;
+}
+
+@keyframes pulsar {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@media (min-width: 900px) {
+  .entrada {
+    flex-direction: row;
+  }
+
+  .entrada-marca {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 48px 64px;
+  }
+
+  .entrada-marca h1 {
+    font-size: 2.8rem;
+  }
+
+  .entrada-destaques {
+    display: block;
+  }
+
+  .entrada-cartao {
+    flex: 0 0 480px;
+    display: flex;
+    align-items: center;
+    border-radius: 0;
+    padding: 48px;
+  }
+
+  .entrada-form {
+    width: 100%;
+  }
+}
+
+/* ============================================================= navegacao ===
+   Faixa da rota sobre o mapa e botao de seguir a posicao.
+   ========================================================================= */
+
+.navegacao {
+  position: absolute;
+  z-index: 800;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 10px 10px 14px;
+  background: var(--mata);
+  color: var(--areia);
+  border-radius: var(--raio-g);
+  box-shadow: 0 4px 18px rgba(26, 36, 29, 0.25);
+}
+
+.navegacao-chegou {
+  background: var(--folha);
+}
+
+.navegacao-texto {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.navegacao-texto strong {
+  font-family: var(--fonte-titulo);
+  font-size: 1.05rem;
+}
+
+.navegacao-destino,
+.navegacao-chegou .navegacao-texto span {
+  font-size: 0.8rem;
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.navegacao-texto small {
+  font-size: 0.74rem;
+  opacity: 0.85;
+  line-height: 1.35;
+}
+
+.navegacao-botao {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgba(242, 236, 225, 0.4);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--areia);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.navegacao-botao:hover {
+  background: rgba(242, 236, 225, 0.12);
+}
+
+.botao-mapa {
+  position: absolute;
+  z-index: 700;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--linha);
+  border-radius: 50%;
+  background: var(--papel);
+  color: var(--tinta);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--sombra-sutil), 0 2px 8px rgba(26, 36, 29, 0.15);
+}
+
+/* Acima do painel recolhido no celular, para nao ficar escondido atras dele. */
+.botao-seguir {
+  right: 12px;
+  bottom: calc(var(--peek) + 14px);
+}
+
+.botao-seguir[aria-pressed='true'] {
+  color: #2f6fd0;
+  border-color: #2f6fd0;
+}
+
+.chegada {
+  background: none;
+  border: none;
+}
+
+.chegada > div {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--tijolo);
+  border: 3px solid var(--papel);
+  box-shadow: 0 1px 4px rgba(26, 36, 29, 0.35);
+}
+
+.conta-menu-nota {
+  margin: 6px 0 0;
+  font-size: 0.72rem;
+  color: var(--tinta-fraca);
+}
+
+@media (min-width: 900px) {
+  .navegacao {
+    left: 16px;
+    right: auto;
+    width: 380px;
+  }
+
+  .botao-seguir {
+    right: 16px;
+    bottom: 96px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ponto-status-pulsando {
+    animation: none;
+  }
 }

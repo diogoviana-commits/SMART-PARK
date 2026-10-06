@@ -8,17 +8,23 @@ import java.io.IOException;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * Le o cabecalho {@code Authorization: Bearer <token>} de cada requisicao e,
- * quando o token e valido, coloca o usuario no contexto de seguranca.
+ * Identifica quem fez a requisicao a partir do token de sessao.
  *
- * <p>Requisicao sem token passa adiante sem usuario: quem decide se aquilo e
+ * <p>O token vem do cookie de sessao, que e como o site se autentica, ou do
+ * cabecalho {@code Authorization: Bearer <token>}, para clientes que nao sao
+ * navegador (testes automatizados, ferramentas de linha de comando).</p>
+ *
+ * <p>Alem da assinatura e da validade, o token precisa ter a mesma versao que a
+ * conta tem hoje no banco. Quando a pessoa sai, a versao muda e todo token
+ * anterior deixa de valer, mesmo que ainda nao tenha expirado.</p>
+ *
+ * <p>Requisicao sem token valido passa adiante sem usuario: quem decide se aquilo e
  * permitido e a {@link ConfiguracaoSeguranca}, nao este filtro.</p>
  */
 @Component
@@ -28,11 +34,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final DetalhesUsuarioService detalhesUsuarioService;
+    private final CookieDeSessao cookie;
 
     public JwtAuthenticationFilter(JwtService jwtService,
-                                   DetalhesUsuarioService detalhesUsuarioService) {
+                                   DetalhesUsuarioService detalhesUsuarioService,
+                                   CookieDeSessao cookie) {
         this.jwtService = jwtService;
         this.detalhesUsuarioService = detalhesUsuarioService;
+        this.cookie = cookie;
     }
 
     @Override
@@ -41,20 +50,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     @NonNull FilterChain corrente)
             throws ServletException, IOException {
 
-        String cabecalho = requisicao.getHeader("Authorization");
-        if (cabecalho == null || !cabecalho.startsWith(PREFIXO)) {
-            corrente.doFilter(requisicao, resposta);
-            return;
-        }
+        String token = tokenDaRequisicao(requisicao);
+        JwtService.DadosDoToken dados = token == null ? null : jwtService.ler(token);
 
-        String email = jwtService.emailDoToken(cabecalho.substring(PREFIXO.length()).trim());
-        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        if (dados != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
-                UserDetails usuario = detalhesUsuarioService.loadUserByUsername(email);
-                var autenticacao = new UsernamePasswordAuthenticationToken(
-                        usuario, null, usuario.getAuthorities());
-                autenticacao.setDetails(new WebAuthenticationDetailsSource().buildDetails(requisicao));
-                SecurityContextHolder.getContext().setAuthentication(autenticacao);
+                UsuarioAutenticado usuario =
+                        (UsuarioAutenticado) detalhesUsuarioService.loadUserByUsername(dados.email());
+                if (usuario.getVersaoToken() == dados.versao()) {
+                    var autenticacao = new UsernamePasswordAuthenticationToken(
+                            usuario, null, usuario.getAuthorities());
+                    autenticacao.setDetails(new WebAuthenticationDetailsSource().buildDetails(requisicao));
+                    SecurityContextHolder.getContext().setAuthentication(autenticacao);
+                } else {
+                    logger.debug("Token de uma sessao ja encerrada");
+                }
             } catch (UsernameNotFoundException e) {
                 // Token valido de um usuario que foi removido depois: segue sem autenticar.
                 logger.debug("Token de usuario inexistente");
@@ -62,5 +72,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         corrente.doFilter(requisicao, resposta);
+    }
+
+    private String tokenDaRequisicao(HttpServletRequest requisicao) {
+        String cabecalho = requisicao.getHeader("Authorization");
+        if (cabecalho != null && cabecalho.startsWith(PREFIXO)) {
+            return cabecalho.substring(PREFIXO.length()).trim();
+        }
+        return cookie.ler(requisicao);
     }
 }

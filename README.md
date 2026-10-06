@@ -16,7 +16,6 @@ funcionamento (75%) apareceram como as informações mais desejadas.
 |---|---|
 | Site | <https://smart-park-eight-puce.vercel.app> |
 | API | <https://smartpark-api-kncs.onrender.com> |
-| Documentação da API | <https://smartpark-api-kncs.onrender.com/swagger-ui/index.html> |
 
 ## Estrutura do repositório
 
@@ -51,18 +50,24 @@ banco nenhum. Detalhes, perfis e segurança em [`mapbackend/README.md`](mapbacke
 
 ## API consumida pelo frontend
 
+O mapa só abre para quem entrou: toda rota abaixo exige login, menos `saude`, cadastro, login e
+sair. A sessão vai num cookie `HttpOnly`, e o site fala com a API pela mesma origem (o rewrite da
+Vercel encaminha `/api` para a Render).
+
 | Método | Rota | Para que serve |
 |---|---|---|
+| GET | `/api/saude` | Diz se a API está no ar; público, usado para acordá-la |
 | GET | `/api/categorias` | Categorias que alimentam os filtros do mapa |
 | GET | `/api/pois` | Lista os pontos; aceita `busca`, `categoria` e `acessivel` |
 | GET | `/api/pois/{id}` | Dados de um ponto (card informativo) |
-| GET | `/api/pois/{id}/rota?lat=&lon=` | Rota a pé, com distância em metros e tempo estimado |
+| GET | `/api/pois/{id}/rota?lat=&lon=&evitarEscadas=` | Rota a pé pelas trilhas do parque, com distância e tempo |
 | GET | `/api/pois/proximos?lat=&lon=&raio=` | Pontos mais próximos da posição informada |
 | GET | `/api/eventos` | Agenda de eventos dos próximos 30 dias |
 | POST | `/api/usuarios` | Cria a conta de visitante (RF01) |
-| POST | `/api/usuarios/login` | Autentica e devolve o token JWT (RF02) |
+| POST | `/api/usuarios/login` | Autentica e abre a sessão em cookie HttpOnly (RF02) |
+| POST | `/api/usuarios/sair` | Encerra a sessão em todos os aparelhos |
 | GET | `/api/pois/{id}/avaliacoes` | Notas e comentários de um ponto (RF11) |
-| POST | `/api/pois/{id}/avaliacoes` | Avalia o ponto de 1 a 5 — exige token (RF11) |
+| POST | `/api/pois/{id}/avaliacoes` | Avalia o ponto de 1 a 5 (RF11) |
 
 ## Tecnologias
 

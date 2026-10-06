@@ -76,12 +76,14 @@ public class PontoInteresseController {
     }
 
     /**
-     * Rota a pe da posicao do visitante ate este ponto de interesse (RF05).
+     * Rota a pe da posicao do visitante ate este ponto de interesse (RF05), pelos
+     * caminhos do parque. Com evitarEscadas=true a rota desvia das escadas.
      */
     @GetMapping("/{id}/rota")
-    public RotaResponse rota(@PathVariable Long id, @RequestParam double lat, @RequestParam double lon) {
+    public RotaResponse rota(@PathVariable Long id, @RequestParam double lat, @RequestParam double lon,
+                             @RequestParam(defaultValue = "false") boolean evitarEscadas) {
         PontoInteresse destino = service.buscarPorId(id);
-        return rotaService.calcular(lat, lon, destino);
+        return rotaService.calcular(lat, lon, destino, evitarEscadas);
     }
 
     @PostMapping

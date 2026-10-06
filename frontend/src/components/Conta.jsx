@@ -11,14 +11,14 @@ function iniciais(nome) {
 const primeiroNome = (nome) => (nome ?? '').trim().split(/\s+/)[0] ?? ''
 
 /**
- * Botão de conta no cabeçalho: "Entrar" quando não há sessão, e as iniciais da
- * pessoa quando há, abrindo um menu com o e-mail e a saída.
+ * Botão de conta no cabeçalho: as iniciais da pessoa, abrindo um menu com o
+ * e-mail e a saída.
  *
  * O e-mail fica no menu, e não no cabeçalho, porque em celular não cabe — e
  * porque é o dado que a pessoa precisa conferir ("entrei com qual conta?"),
  * não o que precisa ver o tempo todo.
  */
-export default function Conta({ sessao, aoPedirLogin, aoSair }) {
+export default function Conta({ sessao, aoSair }) {
   const [aberto, setAberto] = useState(false)
   const caixa = useRef(null)
 
@@ -37,17 +37,6 @@ export default function Conta({ sessao, aoPedirLogin, aoSair }) {
       window.removeEventListener('keydown', aoTeclar)
     }
   }, [aberto])
-
-  if (!sessao) {
-    return (
-      <button type="button" className="botao-conta" onClick={aoPedirLogin}>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-4 0-8 2-8 4.7V21h16v-2.3C20 16 16 14 12 14Z" />
-        </svg>
-        Entrar
-      </button>
-    )
-  }
 
   const nome = sessao.usuario.nome
   const administrador = sessao.usuario.perfil === 'ADMINISTRADOR'
@@ -82,6 +71,7 @@ export default function Conta({ sessao, aoPedirLogin, aoSair }) {
           >
             Sair
           </button>
+          <p className="conta-menu-nota">Sair encerra a sessão em todos os aparelhos.</p>
         </div>
       )}
     </div>

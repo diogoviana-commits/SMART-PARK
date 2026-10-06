@@ -51,14 +51,16 @@ class MissaoControllerTest {
 
     @Test
     void listaAsMissoesDaCargaInicial() throws Exception {
-        mockMvc.perform(get("/api/missoes"))
+        mockMvc.perform(get("/api/missoes")
+                        .header(HttpHeaders.AUTHORIZATION, sessao.autorizacao()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()", is(6)));
     }
 
     @Test
     void filtraPorPeriodicidade() throws Exception {
-        mockMvc.perform(get("/api/missoes").param("periodicidade", "DIARIA"))
+        mockMvc.perform(get("/api/missoes").param("periodicidade", "DIARIA")
+                        .header(HttpHeaders.AUTHORIZATION, sessao.autorizacao()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[*].periodicidade", everyItem(is("DIARIA"))))
                 .andExpect(jsonPath("$.length()", greaterThan(0)));
@@ -66,13 +68,15 @@ class MissaoControllerTest {
 
     @Test
     void periodicidadeInvalidaRetorna400() throws Exception {
-        mockMvc.perform(get("/api/missoes").param("periodicidade", "MENSAL"))
+        mockMvc.perform(get("/api/missoes").param("periodicidade", "MENSAL")
+                        .header(HttpHeaders.AUTHORIZATION, sessao.autorizacao()))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void semLoginAsMissoesVemZeradas() throws Exception {
-        mockMvc.perform(get("/api/missoes"))
+    void contaNovaVeAsMissoesZeradas() throws Exception {
+        mockMvc.perform(get("/api/missoes")
+                        .header(HttpHeaders.AUTHORIZATION, sessao.autorizacao()))
                 .andExpect(jsonPath("$[*].progressoAtual", everyItem(is(0.0))))
                 .andExpect(jsonPath("$[*].concluida", everyItem(is(false))));
     }

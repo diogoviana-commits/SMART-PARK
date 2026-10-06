@@ -47,3 +47,19 @@ export function IconeCategoria({ slug, tamanho = 16, className }) {
     </svg>
   )
 }
+
+/** Marca do aplicativo: uma árvore dentro de um alfinete de mapa. */
+export function Logotipo({ tamanho = 30 }) {
+  return (
+    <svg width={tamanho} height={tamanho} viewBox="0 0 32 32" aria-hidden="true">
+      <path
+        d="M16 2C9.9 2 5 6.8 5 12.7 5 20.5 16 30 16 30s11-9.5 11-17.3C27 6.8 22.1 2 16 2Z"
+        fill="#f2ece1"
+      />
+      <path
+        d="M16 7.5l4.4 7.2h-2.6l3 4.9h-3.9V23h-1.8v-3.4H11l3-4.9h-2.6L16 7.5Z"
+        fill="#20402f"
+      />
+    </svg>
+  )
+}

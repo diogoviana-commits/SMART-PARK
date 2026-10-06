@@ -48,6 +48,13 @@ public class Usuario {
     @Column(name = "ultimo_acesso")
     private LocalDateTime ultimoAcesso;
 
+    /**
+     * Vai dentro de cada token emitido. Incrementar este numero invalida todos os
+     * tokens anteriores da conta: e o que faz "Sair" valer de verdade no servidor.
+     */
+    @Column(name = "versao_token", nullable = false)
+    private int versaoToken;
+
     protected Usuario() {
         // exigido pelo JPA
     }
@@ -105,5 +112,14 @@ public class Usuario {
 
     public void registrarAcesso() {
         this.ultimoAcesso = LocalDateTime.now();
+    }
+
+    public int getVersaoToken() {
+        return versaoToken;
+    }
+
+    /** Derruba todas as sessoes abertas desta conta, em qualquer aparelho. */
+    public void encerrarSessoes() {
+        this.versaoToken++;
     }
 }

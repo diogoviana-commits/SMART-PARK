@@ -1,7 +1,7 @@
 package com.smartparkuscs.mapbackend.service;
 
 import com.smartparkuscs.mapbackend.dto.LoginRequest;
-import com.smartparkuscs.mapbackend.dto.TokenResponse;
+import com.smartparkuscs.mapbackend.dto.SessaoResponse;
 import com.smartparkuscs.mapbackend.dto.UsuarioResponse;
 import com.smartparkuscs.mapbackend.model.Usuario;
 import com.smartparkuscs.mapbackend.repository.UsuarioRepository;
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Login: confere as credenciais e emite o token JWT (RF02).
+ * Login e logout: confere as credenciais, emite o token JWT e encerra sessoes (RF02).
  */
 @Service
 public class AutenticacaoService {
@@ -34,8 +34,17 @@ public class AutenticacaoService {
         this.tentativas = tentativas;
     }
 
+    /**
+     * Resultado do login.
+     *
+     * @param token  vai para o cookie HttpOnly, nunca para o corpo da resposta
+     * @param sessao o que a tela recebe
+     */
+    public record Login(String token, SessaoResponse sessao) {
+    }
+
     @Transactional
-    public TokenResponse entrar(LoginRequest request) {
+    public Login entrar(LoginRequest request) {
         String email = request.email().trim().toLowerCase();
 
         if (tentativas.bloqueado(email)) {
@@ -60,7 +69,22 @@ public class AutenticacaoService {
         usuario.registrarAcesso();
         usuarioRepository.save(usuario);
 
-        return new TokenResponse(jwtService.gerar(usuario), "Bearer",
-                jwtService.expiracao(), UsuarioResponse.de(usuario));
+        return new Login(jwtService.gerar(usuario),
+                new SessaoResponse(jwtService.expiracao(), UsuarioResponse.de(usuario)));
+    }
+
+    /**
+     * Encerra todas as sessoes da conta, em qualquer aparelho.
+     *
+     * <p>Apagar o cookie so tira o token deste navegador. Mudar a versao da conta e o
+     * que garante que uma copia do token (roubada, ou num computador emprestado)
+     * pare de funcionar no mesmo instante.</p>
+     */
+    @Transactional
+    public void sair(Long usuarioId) {
+        usuarioRepository.findById(usuarioId).ifPresent(usuario -> {
+            usuario.encerrarSessoes();
+            usuarioRepository.save(usuario);
+        });
     }
 }

@@ -34,6 +34,10 @@ public class JwtService {
     static final String SEGREDO_PADRAO_DEV =
             "segredo-de-desenvolvimento-do-smart-park-troque-em-producao-1234567890";
 
+    /** Recusa tokens assinados com a mesma chave para outro proposito. */
+    private static final String EMISSOR = "smartpark-api";
+    private static final String VERSAO = "ver";
+
     private final String segredo;
     private final long duracaoMinutos;
     private final Environment ambiente;
@@ -76,13 +80,18 @@ public class JwtService {
         return Instant.now().plus(duracaoMinutos, ChronoUnit.MINUTES);
     }
 
+    public long duracaoEmSegundos() {
+        return duracaoMinutos * 60;
+    }
+
     public String gerar(Usuario usuario) {
         Instant agora = Instant.now();
         return Jwts.builder()
+                .issuer(EMISSOR)
                 .subject(usuario.getEmail())
                 .claim("uid", usuario.getId())
                 .claim("perfil", usuario.getPerfil().name())
-                .claim("nome", usuario.getNome())
+                .claim(VERSAO, usuario.getVersaoToken())
                 .issuedAt(Date.from(agora))
                 .expiration(Date.from(agora.plus(duracaoMinutos, ChronoUnit.MINUTES)))
                 .signWith(chave)
@@ -90,18 +99,37 @@ public class JwtService {
     }
 
     /**
-     * Le o token e devolve o e-mail de quem o token identifica.
+     * O que o servidor precisa saber de um token valido.
+     *
+     * @param versao versao da conta quando o token foi emitido; se a conta ja estiver
+     *               em outra versao, a pessoa saiu depois e o token nao vale mais
+     */
+    public record DadosDoToken(String email, int versao) {
+    }
+
+    /**
+     * Confere assinatura, validade e emissor do token.
      *
      * @return null quando o token e invalido, expirado ou foi adulterado
      */
-    public String emailDoToken(String token) {
+    public DadosDoToken ler(String token) {
         try {
-            Claims dados = Jwts.parser().verifyWith(chave).build()
+            Claims dados = Jwts.parser().verifyWith(chave).requireIssuer(EMISSOR).build()
                     .parseSignedClaims(token).getPayload();
-            return dados.getSubject();
+            Integer versao = dados.get(VERSAO, Integer.class);
+            if (dados.getSubject() == null || versao == null) {
+                return null;
+            }
+            return new DadosDoToken(dados.getSubject(), versao);
         } catch (JwtException | IllegalArgumentException e) {
             log.debug("Token recusado: {}", e.getMessage());
             return null;
         }
+    }
+
+    /** E-mail de quem o token identifica, ou null se o token nao vale. */
+    public String emailDoToken(String token) {
+        DadosDoToken dados = ler(token);
+        return dados == null ? null : dados.email();
     }
 }

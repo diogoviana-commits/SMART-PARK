@@ -1,10 +1,12 @@
 package com.smartparkuscs.mapbackend.controller;
 
 import com.smartparkuscs.mapbackend.dto.LoginRequest;
-import com.smartparkuscs.mapbackend.dto.TokenResponse;
+import com.smartparkuscs.mapbackend.dto.SessaoResponse;
 import com.smartparkuscs.mapbackend.dto.UsuarioRequest;
 import com.smartparkuscs.mapbackend.dto.UsuarioResponse;
 import com.smartparkuscs.mapbackend.model.Usuario;
+import com.smartparkuscs.mapbackend.security.CookieDeSessao;
+import com.smartparkuscs.mapbackend.security.JwtService;
 import com.smartparkuscs.mapbackend.security.UsuarioAutenticado;
 import com.smartparkuscs.mapbackend.service.AutenticacaoService;
 import com.smartparkuscs.mapbackend.service.UsuarioService;
@@ -14,6 +16,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -36,10 +39,15 @@ public class UsuarioController {
 
     private final UsuarioService service;
     private final AutenticacaoService autenticacaoService;
+    private final CookieDeSessao cookie;
+    private final JwtService jwtService;
 
-    public UsuarioController(UsuarioService service, AutenticacaoService autenticacaoService) {
+    public UsuarioController(UsuarioService service, AutenticacaoService autenticacaoService,
+                             CookieDeSessao cookie, JwtService jwtService) {
         this.service = service;
         this.autenticacaoService = autenticacaoService;
+        this.cookie = cookie;
+        this.jwtService = jwtService;
     }
 
     @PostMapping
@@ -68,10 +76,27 @@ public class UsuarioController {
     }
 
     @PostMapping("/login")
-    @Operation(summary = "Autentica e devolve o token JWT",
-            description = "Envie o token nas demais chamadas no cabecalho Authorization: Bearer <token>.")
-    public TokenResponse entrar(@RequestBody @Valid LoginRequest request) {
-        return autenticacaoService.entrar(request);
+    @Operation(summary = "Autentica e abre a sessao",
+            description = """
+                    O token vai no cookie HttpOnly da resposta, e o navegador o envia
+                    sozinho nas chamadas seguintes. Clientes que nao sao navegador podem
+                    ler o cookie e envia-lo no cabecalho Authorization: Bearer <token>.
+                    """)
+    public ResponseEntity<SessaoResponse> entrar(@RequestBody @Valid LoginRequest request) {
+        AutenticacaoService.Login login = autenticacaoService.entrar(request);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.criar(login.token(), jwtService.duracaoEmSegundos()))
+                .body(login.sessao());
+    }
+
+    @PostMapping("/sair")
+    @Operation(summary = "Encerra a sessao em todos os aparelhos",
+            description = "Aberto mesmo sem sessao valida, para sempre conseguir apagar o cookie.")
+    public ResponseEntity<Void> sair(@AuthenticationPrincipal UsuarioAutenticado autenticado) {
+        if (autenticado != null) {
+            autenticacaoService.sair(autenticado.getId());
+        }
+        return ResponseEntity.noContent().header(HttpHeaders.SET_COOKIE, cookie.apagar()).build();
     }
 
     @GetMapping("/eu")

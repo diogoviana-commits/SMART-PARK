@@ -3,7 +3,7 @@
 #
 #  Serve para publicar a API em qualquer serviço que aceite Docker (Railway,
 #  Render, Fly.io, Google Cloud Run). O Vercel não roda Java, então o backend
-#  precisa de outro endereço — o front aponta para ele pela VITE_API_URL.
+#  precisa de outro endereço — o rewrite de frontend/vercel.json encaminha /api para ele.
 #
 #  Build local:  docker build -t smartpark-api .
 #  Rodar local:  docker run -p 8080:8080 -e SPRING_PROFILES_ACTIVE=dev smartpark-api

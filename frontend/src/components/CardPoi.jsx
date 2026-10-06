@@ -1,5 +1,6 @@
 import { IconeCategoria } from '../icones.jsx'
 import Avaliacoes from './Avaliacoes.jsx'
+import { distanciaLegivel } from '../geo.js'
 
 const ROTULOS_STATUS = {
   EM_FUNCIONAMENTO: 'Aberto',
@@ -12,10 +13,6 @@ function horario(poi) {
   return `${poi.horarioAbertura.slice(0, 5)} – ${poi.horarioFechamento.slice(0, 5)}`
 }
 
-function distanciaLegivel(metros) {
-  return metros >= 1000 ? `${(metros / 1000).toFixed(1)} km` : `${Math.round(metros)} m`
-}
-
 /**
  * Card do ponto selecionado (RF07), com o botão que traça a rota a pé (RF05) e
  * as avaliações dos visitantes (RF11).
@@ -26,8 +23,8 @@ export default function CardPoi({
   calculandoRota,
   aoPedirRota,
   temLocalizacao,
+  evitandoEscadas,
   sessao,
-  aoPedirLogin,
   aoMudarAvaliacao,
 }) {
   const rotaDesteponto = rota && rota.destino.id === poi.id ? rota : null
@@ -95,7 +92,8 @@ export default function CardPoi({
           <div className="rota-resumo">
             <strong>{distanciaLegivel(rotaDesteponto.distanciaMetros)}</strong>
             <span>
-              cerca de {rotaDesteponto.duracaoMinutos} min a pé — o trajeto está traçado no mapa
+              cerca de {rotaDesteponto.duracaoMinutos} min a pé pelos caminhos do parque
+              {evitandoEscadas && ', sem escadas'} — acompanhe no mapa
             </span>
           </div>
         )}
@@ -104,7 +102,6 @@ export default function CardPoi({
       <Avaliacoes
         poi={poi}
         sessao={sessao}
-        aoPedirLogin={aoPedirLogin}
         aoMudar={aoMudarAvaliacao}
       />
     </div>

@@ -41,6 +41,7 @@ public class UsuarioService {
     @Transactional
     public Usuario cadastrarComPerfil(UsuarioRequest request, Perfil perfil) {
         String email = request.email().trim().toLowerCase();
+        PoliticaDeSenha.validar(request.senha(), email, request.nome());
         if (repository.existsByEmailIgnoreCase(email)) {
             throw new EmailJaCadastradoException(
                     "E-mail ja cadastrado. Use a opcao de entrar ou recuperar a senha.");

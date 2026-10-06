@@ -21,6 +21,8 @@ public class ControleDeTentativas {
     private record Registro(int falhas, Instant ultimaFalha) {
     }
 
+    private static final int LIMITE_DE_REGISTROS = 10_000;
+
     private final Map<String, Registro> tentativas = new ConcurrentHashMap<>();
     private final int limite;
     private final Duration janela;
@@ -44,6 +46,12 @@ public class ControleDeTentativas {
     }
 
     public void registrarFalha(String email) {
+        // Quem testa milhares de e-mails inventados faria este mapa crescer sem
+        // limite ate faltar memoria. Passando do teto, os registros vencidos saem.
+        if (tentativas.size() > LIMITE_DE_REGISTROS) {
+            Instant corte = Instant.now().minus(janela);
+            tentativas.values().removeIf(r -> r.ultimaFalha().isBefore(corte));
+        }
         tentativas.compute(chave(email), (k, atual) -> {
             if (atual == null || Duration.between(atual.ultimaFalha(), Instant.now()).compareTo(janela) > 0) {
                 return new Registro(1, Instant.now());
