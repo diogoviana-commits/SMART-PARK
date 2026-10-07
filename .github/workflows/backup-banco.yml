@@ -1,7 +1,8 @@
-# Backup semanal do banco publicado e aviso do prazo do plano gratuito.
+# Backup semanal do banco publicado (PostgreSQL no Neon).
 #
-# O PostgreSQL gratuito da Render é apagado em 23/10/2026, sem renovação.
-# O backup guarda usuários, avaliações e missões para levar ao banco novo.
+# Guarda usuários, avaliações e progresso nas missões. Os pontos, eventos e
+# missões em si a API recria sozinha num banco vazio; o que só existe no banco
+# é o que os visitantes cadastraram.
 #
 # O repositório é público, e artefatos de repositório público podem ser
 # baixados por qualquer pessoa logada no GitHub. Por isso o arquivo é
@@ -9,8 +10,8 @@
 #
 # Para ligar, crie dois secrets em
 # Settings > Secrets and variables > Actions > Secrets:
-#   DATABASE_URL   a "External Database URL" do painel da Render
-#                  (postgresql://usuario:senha@host/banco)
+#   DATABASE_URL   o endereço do banco no Neon (botão Connect, sem pooling):
+#                  postgresql://usuario:senha@host/banco?sslmode=require
 #   BACKUP_SENHA   uma senha longa qualquer, guardada também fora do GitHub
 # Sem eles o backup não faz nada, em vez de falhar.
 #
@@ -42,7 +43,7 @@ jobs:
           fi
 
           # O pg_dump precisa ser da mesma versão do servidor ou mais novo.
-          # A imagem 18 atende qualquer versão que a Render oferece hoje.
+          # A imagem 18 atende qualquer versão que o Neon oferece hoje.
           docker run --rm postgres:18 pg_dump --format=custom "$DATABASE_URL" > smartpark.dump
 
           echo "Backup com $(du -h smartpark.dump | cut -f1)."
@@ -58,37 +59,3 @@ jobs:
           name: backup-banco-${{ github.run_number }}
           path: smartpark.dump.gpg
           retention-days: 90
-
-  avisar-prazo:
-    runs-on: ubuntu-latest
-    permissions:
-      issues: write
-    steps:
-      # A partir de 16/10/2026 (uma semana antes do prazo) abre uma issue
-      # lembrando de trocar o banco. Só abre uma vez.
-      - name: Abrir issue se o prazo estiver perto
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          hoje=$(date -u +%Y%m%d)
-          if [ "$hoje" -lt 20261016 ] || [ "$hoje" -gt 20261023 ]; then
-            echo "Fora da semana do prazo. Nada a fazer."
-            exit 0
-          fi
-
-          titulo="O banco gratuito da Render será apagado em 23/10/2026"
-          if gh issue list --state all --search "$titulo in:title" --json number --jq '.[0].number' | grep -q .; then
-            echo "A issue já existe."
-            exit 0
-          fi
-
-          gh issue create --title "$titulo" --body "O PostgreSQL do plano gratuito da Render é apagado 30 dias depois de criado e não pode ser renovado.
-
-          Antes de 23/10/2026:
-          1. Rode o fluxo **Backup do banco** na mão (Actions > Backup do banco > Run workflow).
-          2. Crie um PostgreSQL novo no Neon ou no Supabase (plano gratuito sem prazo).
-          3. Restaure o backup nele e aponte SPRING_DATASOURCE_URL, SPRING_DATASOURCE_USERNAME e SPRING_DATASOURCE_PASSWORD da Render para o banco novo.
-          4. Atualize o secret DATABASE_URL do GitHub para o banco novo.
-
-          Detalhes no README do mapbackend."

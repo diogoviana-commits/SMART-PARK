@@ -35,12 +35,13 @@ Os três perfis que rodam expostos (`prod`, `postgres`, `demo`) exigem `SMARTPAR
 subir e só criam o administrador inicial se `SMARTPARK_ADMIN_SENHA` estiver definida. Quem decide
 o que conta como "exposto" é `config/Ambientes.java`, em um lugar só.
 
-> **Prazo do banco publicado.** A API no ar usa um PostgreSQL do plano gratuito da Render, que é
-> **apagado 30 dias depois de criado — em 23/10/2026**. Não dá para renovar. Quando vencer, a API
-> deixa de subir e, como o mapa exige login, **ninguém consegue entrar no site**. Para trocar de banco não é preciso mexer em código: aponte `SPRING_DATASOURCE_URL`,
-> `SPRING_DATASOURCE_USERNAME` e `SPRING_DATASOURCE_PASSWORD` para um PostgreSQL novo e vazio, que
-> o Flyway cria o esquema e a carga inicial repovoa o parque. Serviços com plano gratuito sem
-> prazo: Neon e Supabase.
+> **Banco publicado.** A API no ar usa um PostgreSQL do plano gratuito do **Neon** (região São
+> Paulo, sem prazo de validade), ligado à Render pelas variáveis `SPRING_DATASOURCE_URL`,
+> `SPRING_DATASOURCE_USERNAME` e `SPRING_DATASOURCE_PASSWORD`. Use a conexão **sem pooling** (o
+> endereço sem `-pooler`): é a que o Flyway e o Hibernate esperam. Para trocar de banco não é
+> preciso mexer em código: aponte as três variáveis para um PostgreSQL novo e vazio, que o Flyway
+> cria o esquema e a carga inicial repovoa o parque. O fluxo "Backup do banco" do GitHub guarda
+> uma cópia criptografada toda semana.
 
 | Recurso | Endereço |
 |---|---|
