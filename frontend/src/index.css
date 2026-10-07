@@ -630,6 +630,8 @@ body.fonte-grande {
   font-family: var(--fonte-titulo);
   font-size: 1.1rem;
   color: var(--mata);
+  /* "294 m" quebrava em duas linhas quando o texto ao lado era longo. */
+  white-space: nowrap;
 }
 
 .dica {

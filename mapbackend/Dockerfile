@@ -36,11 +36,12 @@ COPY --from=construcao /app/target/mapbackend-*.jar app.jar
 
 EXPOSE 8080
 
-# Variáveis que o serviço de hospedagem deve definir:
-#   SPRING_PROFILES_ACTIVE=prod
-#   SPRING_DATASOURCE_URL / MYSQL_USER / MYSQL_PASSWORD
-#   SMARTPARK_JWT_SECRET      (obrigatória em prod: sem ela a aplicação não sobe)
-#   SMARTPARK_CORS_ORIGENS    (domínio do front publicado)
+# Variáveis que o serviço de hospedagem deve definir (a Render usa o perfil postgres,
+# com o banco no Neon):
+#   SPRING_PROFILES_ACTIVE=postgres
+#   SPRING_DATASOURCE_URL / SPRING_DATASOURCE_USERNAME / SPRING_DATASOURCE_PASSWORD
+#   SMARTPARK_JWT_SECRET      (obrigatória: sem ela a aplicação não sobe)
+#   SMARTPARK_ADMIN_SENHA     (sem ela o administrador inicial não é criado)
 # A JVM, sozinha, dimensiona a memoria pelo total da maquina, e nao pelo limite
 # do contentor. Em uma instancia de 512 MB (o plano gratuito da Render, por
 # exemplo) ela pediria mais do que existe e o servico morreria por falta de
