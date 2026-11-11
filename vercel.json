@@ -43,8 +43,14 @@
     "gru1"
   ],
   "functions": {
-    "api/[[...rota]].ts": {
+    "api/index.ts": {
       "maxDuration": 10
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api"
+    }
+  ]
 }

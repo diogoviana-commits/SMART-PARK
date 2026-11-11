@@ -34,3 +34,6 @@ Thumbs.db
 
 # Atalhos locais do Windows (ficam so na maquina)
 *.bat
+
+# Contexto local do CLI do Neon
+.neon

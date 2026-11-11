@@ -1,5 +1,6 @@
 /**
- * Entrada da API na Vercel: uma função só atende todas as rotas /api/*.
+ * Entrada da API na Vercel: uma função só atende todas as rotas /api/*
+ * (o vercel.json encaminha /api/qualquer/coisa para cá).
  *
  * Diferente da Render no plano gratuito, a função não "dorme" por 15 minutos: o
  * primeiro pedido depois de um tempo parado só paga a criação da instância, que
