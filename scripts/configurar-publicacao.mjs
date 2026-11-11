@@ -59,7 +59,11 @@ const neon = (args) => rodar('npx', ['-y', 'neonctl@latest', ...args])
 
 async function enderecoDoNeon() {
   titulo('1/4  Banco no Neon')
-  console.log('  Se for a primeira vez, o navegador abre para você entrar na conta do Neon.')
+  console.log('  O navegador vai abrir para você entrar na conta do Neon.')
+  console.log('  (Se não abrir, copie o endereço que aparecer abaixo e abra no navegador.)')
+  // Login à vista: o CLI mostra o endereço de autorização e espera você entrar.
+  const login = rodar('npx', ['-y', 'neonctl@latest', 'auth'], { mostrar: true })
+  if (login.codigo !== 0) console.log('  [aviso] o login no Neon não terminou; vou pedir o endereço à mão.')
   const lista = neon(['projects', 'list', '--output', 'json'])
   let projetos = []
   try {
@@ -77,7 +81,8 @@ async function enderecoDoNeon() {
   }
 
   if (projeto) {
-    const r = neon(['connection-string', '--project-id', projeto.id, '--pooled', 'false'])
+    // Sem pooling é o padrão do CLI
+    const r = neon(['connection-string', '--project-id', projeto.id])
     if (r.codigo === 0 && r.saida.startsWith('postgres')) {
       ok(`endereço obtido do projeto "${projeto.name}"`)
       return r.saida.split(/\r?\n/).pop().trim()
