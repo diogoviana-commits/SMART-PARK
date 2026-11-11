@@ -31,3 +31,6 @@ Thumbs.db
 *.zip
 *.pptx
 *.xlsx
+
+# Atalhos locais do Windows (ficam so na maquina)
+*.bat
