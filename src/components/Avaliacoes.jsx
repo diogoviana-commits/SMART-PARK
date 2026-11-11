@@ -75,20 +75,23 @@ function EscolherNota({ valor, aoEscolher, desabilitado }) {
 }
 
 /**
- * Avaliações de um ponto (RF11): média, lista e o formulário de quem está logado.
+ * Avaliações de um ponto (RF10): média, lista e o formulário de quem está logado.
+ * Ler é aberto; para avaliar, quem não entrou vê o convite para entrar.
  *
  * A API guarda uma avaliação por pessoa em cada ponto, e avaliar de novo
  * substitui a anterior — então, quando a pessoa já avaliou, o formulário aparece
  * preenchido com a nota dela e o botão diz "Atualizar", em vez de fingir que
  * seria uma avaliação nova.
  */
-export default function Avaliacoes({ poi, sessao, aoMudar }) {
+export default function Avaliacoes({ poi, sessao, aoMudar, aoPedirLogin }) {
   const [avaliacoes, setAvaliacoes] = useState(null)
   const [erro, setErro] = useState(null)
   const [nota, setNota] = useState(0)
   const [comentario, setComentario] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [aberto, setAberto] = useState(false)
+  // Apagar não tem volta: o primeiro toque só pede confirmação.
+  const [confirmandoApagar, setConfirmandoApagar] = useState(false)
 
   const usuarioId = sessao?.usuario?.id ?? null
 
@@ -119,6 +122,7 @@ export default function Avaliacoes({ poi, sessao, aoMudar }) {
   useEffect(() => {
     setNota(minha?.nota ?? 0)
     setComentario(minha?.comentario ?? '')
+    setConfirmandoApagar(false)
   }, [minha])
 
   async function enviar(evento) {
@@ -194,6 +198,14 @@ export default function Avaliacoes({ poi, sessao, aoMudar }) {
             </p>
           )}
 
+          {!sessao ? (
+            <div className="convite-entrar">
+              <p>Entre na sua conta para dar a sua nota.</p>
+              <button type="button" className="botao-secundario" onClick={aoPedirLogin}>
+                Entrar para avaliar
+              </button>
+            </div>
+          ) : (
           <form className="form-avaliacao" onSubmit={enviar}>
             <EscolherNota valor={nota} aoEscolher={setNota} desabilitado={enviando} />
             <label className="campo">
@@ -210,18 +222,37 @@ export default function Avaliacoes({ poi, sessao, aoMudar }) {
               <button type="submit" className="botao-principal" disabled={enviando || !nota}>
                 {enviando ? 'Enviando…' : minha ? 'Atualizar avaliação' : 'Enviar avaliação'}
               </button>
-              {minha && (
+              {minha && !confirmandoApagar && (
                 <button
                   type="button"
                   className="botao-discreto"
                   disabled={enviando}
-                  onClick={() => apagar(minha.id)}
+                  onClick={() => setConfirmandoApagar(true)}
                 >
                   Apagar a minha
                 </button>
               )}
             </div>
+            {minha && confirmandoApagar && (
+              <div className="confirmacao" role="alert">
+                <p>Apagar a sua avaliação deste ponto? Não dá para desfazer.</p>
+                <div className="confirmacao-acoes">
+                  <button
+                    type="button"
+                    className="botao-perigo"
+                    disabled={enviando}
+                    onClick={() => apagar(minha.id)}
+                  >
+                    Sim, apagar
+                  </button>
+                  <button type="button" className="botao-discreto" onClick={() => setConfirmandoApagar(false)}>
+                    Manter
+                  </button>
+                </div>
+              </div>
+            )}
           </form>
+          )}
 
           {avaliacoes === null && !erro && <p className="dica">Carregando…</p>}
 

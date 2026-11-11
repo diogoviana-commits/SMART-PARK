@@ -21,7 +21,12 @@
   --tinta-fraca: #6a7268;
   --tijolo: #b4542f;
   --linha: #d9d1c0;
-  --foco: #8ab06a;
+  /* Contraste de 3:1 ou mais (WCAG 1.4.11) sobre os fundos claros */
+  --foco: #3f7a35;
+  /* Sobre os fundos escuros (cabeçalho e painel de entrada) */
+  --foco-escuro: #c9e27a;
+  /* Borda de campo de formulário: 3,5:1 sobre areia, 3,9:1 sobre papel */
+  --borda-campo: #857d6b;
 
   --raio: 10px;
   --raio-g: 18px;
@@ -63,6 +68,12 @@ button {
   outline: 2px solid var(--foco);
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+.topo :focus-visible,
+.entrada-marca :focus-visible,
+.entrada-fechar:focus-visible {
+  outline-color: var(--foco-escuro);
 }
 
 /* Acessibilidade (RF12): amplia tudo de uma vez, sem quebrar o layout */
@@ -299,15 +310,16 @@ body.fonte-grande {
   align-items: center;
   gap: 8px;
   background: var(--areia);
-  border: 1px solid var(--linha);
+  border: 1px solid var(--borda-campo);
   border-radius: var(--raio);
   padding: 0 10px;
   margin-bottom: 12px;
 }
 
 .busca:focus-within {
-  border-color: var(--folha);
+  border-color: var(--foco);
   background: var(--papel);
+  box-shadow: 0 0 0 2px var(--foco);
 }
 
 .busca svg {
@@ -1079,7 +1091,7 @@ button.evento:hover {
   width: 100%;
   min-height: 44px;
   padding: 10px 12px;
-  border: 1px solid var(--linha);
+  border: 1px solid var(--borda-campo);
   border-radius: var(--raio);
   background: var(--papel);
   font-size: 0.92rem;
@@ -1334,8 +1346,37 @@ button.evento:hover {
 }
 
 /* ================================================================ entrada ===
-   Tela de entrar / criar conta. O mapa so aparece depois dela.
+   Entrar / criar conta, por cima do mapa. O mapa é aberto; a conta só é
+   pedida para avaliar e para as missões.
    ========================================================================= */
+
+.entrada-dialogo {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  overflow-y: auto;
+}
+
+.entrada-fechar {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top));
+  left: 12px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 8px 14px 8px 10px;
+  border: 1px solid rgba(242, 236, 225, 0.45);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--areia);
+  font-weight: 600;
+}
+
+.entrada-dialogo .entrada-marca {
+  padding-top: calc(72px + env(safe-area-inset-top));
+}
 
 .entrada {
   min-height: 100dvh;
@@ -1417,41 +1458,6 @@ button.evento:hover {
   border: 1px solid #e3d2ad;
   color: #7a5a18;
   font-size: 0.83rem;
-}
-
-.entrada-situacao {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.8rem;
-  line-height: 1.45;
-  color: var(--tinta-fraca);
-}
-
-.entrada-situacao-erro {
-  color: #8c3d1f;
-}
-
-.ponto-status {
-  flex-shrink: 0;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #c9a227;
-}
-
-.entrada-situacao-ok .ponto-status {
-  background: var(--folha);
-}
-
-.ponto-status-pulsando {
-  animation: pulsar 1.4s ease-in-out infinite;
-}
-
-@keyframes pulsar {
-  50% {
-    opacity: 0.25;
-  }
 }
 
 @media (min-width: 900px) {
@@ -1615,8 +1621,64 @@ button.evento:hover {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .ponto-status-pulsando {
-    animation: none;
-  }
+
+
+/* ======================================================= avaliação: extras ===
+   Convite para entrar (quem não tem conta) e confirmação antes de apagar.
+   ========================================================================= */
+
+.convite-entrar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--papel);
+}
+
+.convite-entrar p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.botao-secundario {
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1.5px solid var(--mata-clara);
+  border-radius: var(--raio);
+  background: transparent;
+  color: var(--mata-clara);
+  font-weight: 600;
+}
+
+.confirmacao {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--tijolo);
+  border-radius: var(--raio);
+  background: #fbefe9;
+}
+
+.confirmacao p {
+  margin: 0 0 10px;
+  font-size: 0.9rem;
+}
+
+.confirmacao-acoes {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.botao-perigo {
+  min-height: 44px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: var(--raio);
+  background: #9c4426;
+  color: #fff;
+  font-weight: 600;
 }

@@ -15,7 +15,7 @@ function horario(poi) {
 
 /**
  * Card do ponto selecionado (RF07), com o botão que traça a rota a pé (RF05) e
- * as avaliações dos visitantes (RF11).
+ * as avaliações dos visitantes (RF10).
  */
 export default function CardPoi({
   poi,
@@ -26,6 +26,7 @@ export default function CardPoi({
   evitandoEscadas,
   sessao,
   aoMudarAvaliacao,
+  aoPedirLogin,
 }) {
   const rotaDesteponto = rota && rota.destino.id === poi.id ? rota : null
 
@@ -103,6 +104,7 @@ export default function CardPoi({
         poi={poi}
         sessao={sessao}
         aoMudar={aoMudarAvaliacao}
+        aoPedirLogin={aoPedirLogin}
       />
     </div>
   )

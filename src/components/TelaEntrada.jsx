@@ -3,20 +3,13 @@ import { ApiIndisponivel, cadastrar, entrar } from '../api.js'
 import { Logotipo } from '../icones.jsx'
 
 /**
- * Tela de entrada (RF01, RF02): o mapa só abre depois de entrar ou criar conta.
+ * Entrar ou criar conta (RF01, RF02), por cima do mapa.
  *
- * Enquanto a pessoa digita, o servidor vai acordando em segundo plano — no plano
- * gratuito ele hiberna e leva perto de um minuto para responder. A faixa de
- * situação conta o que está acontecendo, para a espera não parecer travamento.
+ * Aparece quando a pessoa pede algo que exige conta (avaliar, missões) ou toca
+ * em "Entrar". Fechar (botão, Esc) volta para o mapa no mesmo ponto: a conta é
+ * opcional para consultar o parque.
  */
-export default function TelaEntrada({
-  conectando,
-  foraDoAr,
-  tentativaConexao,
-  aviso,
-  aoTentarDeNovo,
-  aoAutenticar,
-}) {
+export default function TelaEntrada({ aviso, aoAutenticar, aoFechar }) {
   const [modo, setModo] = useState('entrar')
   const [nome, setNome] = useState('')
   const [email, setEmail] = useState('')
@@ -31,6 +24,14 @@ export default function TelaEntrada({
   useEffect(() => {
     primeiroCampo.current?.focus()
   }, [modo])
+
+  useEffect(() => {
+    const aoTeclar = (evento) => {
+      if (evento.key === 'Escape') aoFechar()
+    }
+    window.addEventListener('keydown', aoTeclar)
+    return () => window.removeEventListener('keydown', aoTeclar)
+  }, [aoFechar])
 
   const trocarModo = (novo) => {
     setModo(novo)
@@ -52,7 +53,7 @@ export default function TelaEntrada({
     } catch (e) {
       setErro(
         e instanceof ApiIndisponivel
-          ? 'O servidor ainda não respondeu. Aguarde alguns segundos e tente de novo.'
+          ? 'Sem conexão com o servidor. Confira a internet e tente de novo.'
           : e.message,
       )
     } finally {
@@ -61,7 +62,14 @@ export default function TelaEntrada({
   }
 
   return (
-    <div className="entrada">
+    <div className="entrada entrada-dialogo" role="dialog" aria-modal="true" aria-labelledby="titulo-entrada">
+      <button type="button" className="entrada-fechar" onClick={aoFechar}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+          <path d="m15 18-6-6 6-6" />
+        </svg>
+        Voltar ao mapa
+      </button>
       <section className="entrada-marca">
         <Logotipo tamanho={46} />
         <h1>Smart Park</h1>
@@ -75,11 +83,11 @@ export default function TelaEntrada({
 
       <section className="entrada-cartao">
         <form className="entrada-form" onSubmit={enviar}>
-          <h2>{criando ? 'Criar conta' : 'Entrar'}</h2>
+          <h2 id="titulo-entrada">{criando ? 'Criar conta' : 'Entrar'}</h2>
           <p className="caixa-explica">
             {criando
-              ? 'Crie sua conta gratuita para acessar o mapa do parque.'
-              : 'Entre com sua conta para acessar o mapa do parque.'}
+              ? 'Crie sua conta gratuita para avaliar os pontos e fazer as missões.'
+              : 'Entre para avaliar os pontos e acompanhar as suas missões.'}
           </p>
 
           {aviso && !erro && (
@@ -168,42 +176,8 @@ export default function TelaEntrada({
             {enviando ? 'Enviando…' : criando ? 'Criar conta e entrar' : 'Entrar'}
           </button>
 
-          <SituacaoServidor
-            conectando={conectando}
-            foraDoAr={foraDoAr}
-            tentativa={tentativaConexao}
-            aoTentarDeNovo={aoTentarDeNovo}
-          />
         </form>
       </section>
-    </div>
-  )
-}
-
-function SituacaoServidor({ conectando, foraDoAr, tentativa, aoTentarDeNovo }) {
-  if (foraDoAr) {
-    return (
-      <div className="entrada-situacao entrada-situacao-erro" role="alert">
-        O servidor não respondeu.{' '}
-        <button type="button" className="link" onClick={aoTentarDeNovo}>
-          Tentar de novo
-        </button>
-      </div>
-    )
-  }
-  if (!conectando) {
-    return (
-      <div className="entrada-situacao entrada-situacao-ok">
-        <span className="ponto-status" aria-hidden="true" /> Servidor conectado
-      </div>
-    )
-  }
-  return (
-    <div className="entrada-situacao" role="status" aria-live="polite">
-      <span className="ponto-status ponto-status-pulsando" aria-hidden="true" />
-      {tentativa > 1
-        ? 'O servidor estava em repouso e está ligando. Isso leva até um minuto — pode ir preenchendo.'
-        : 'Conectando ao servidor…'}
     </div>
   )
 }

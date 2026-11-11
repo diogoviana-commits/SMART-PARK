@@ -10,8 +10,6 @@ import { IconeCategoria, Logotipo } from './icones.jsx'
 import { distancia, trechoRestante } from './geo.js'
 import {
   SessaoExpirada,
-  acordarServidor,
-  calcularRota,
   listarCategorias,
   listarEventos,
   listarPois,
@@ -19,6 +17,7 @@ import {
   sair,
   sessaoAtual,
 } from './api.js'
+import { carregarRede, tracarRotaAte } from './rota.js'
 
 /** Afastado da linha mais que isto, o visitante saiu do caminho: a rota é refeita. */
 const DESVIO_PARA_RECALCULAR_M = 35
@@ -38,106 +37,74 @@ function Lupa() {
 }
 
 /**
- * Porta de entrada: o mapa só aparece para quem está logado (RNF03).
- *
- * A mesma regra vale no servidor — toda rota de dados da API exige login —,
- * então esconder a tela aqui é conforto, não a proteção em si.
+ * O mapa abre direto, sem conta: quem chega ao parque quer achar o banheiro, não
+ * preencher cadastro. A conta só é pedida para avaliar e para as missões — aí a
+ * tela de entrada aparece por cima do mapa e, ao entrar, a pessoa volta para
+ * onde estava.
  */
 export default function App() {
-  // conectando: acordando o servidor e conferindo se já há sessão aberta
-  // entrar: servidor no ar, sem sessão  |  logado  |  fora-do-ar
-  const [estado, setEstado] = useState('conectando')
   const [sessao, setSessao] = useState(null)
-  const [tentativaConexao, setTentativaConexao] = useState(0)
-  const [recomecar, setRecomecar] = useState(0)
+  const [entrando, setEntrando] = useState(false)
   const [aviso, setAviso] = useState(null)
 
-  const encerrar = useCallback((mensagem) => {
-    setSessao(null)
-    setAviso(mensagem ?? null)
-    setEstado('entrar')
+  // Sessão que já estava aberta neste navegador (cookie HttpOnly).
+  useEffect(() => {
+    sessaoAtual()
+      .then((atual) => atual && setSessao(atual))
+      .catch(() => {}) // sem rede: segue como visitante anônimo
   }, [])
 
-  // Qualquer 401 da API (sessão expirada, encerrada em outro aparelho) volta
-  // para a tela de entrada, em vez de deixar a pessoa num mapa que não carrega.
+  // Um 401 no meio do uso (sessão expirada, encerrada em outro aparelho) tira a
+  // pessoa da conta, mas não do mapa.
   useEffect(() => {
-    quandoSessaoExpirar(() => encerrar('Sua sessão terminou. Entre de novo para continuar.'))
-  }, [encerrar])
-
-  useEffect(() => {
-    let cancelado = false
-    setEstado((anterior) => (anterior === 'logado' ? anterior : 'conectando'))
-
-    async function conectar() {
-      const noAr = await acordarServidor((n) => !cancelado && setTentativaConexao(n))
-      if (cancelado) return
-      if (!noAr) {
-        setEstado((anterior) => (anterior === 'logado' ? anterior : 'fora-do-ar'))
-        return
-      }
-      try {
-        const atual = await sessaoAtual()
-        if (cancelado) return
-        if (atual) {
-          setSessao(atual)
-          setEstado('logado')
-        } else {
-          // Se a pessoa entrou pelo formulário enquanto o servidor acordava,
-          // a sessão dela já está valendo: não volta para a tela de entrada.
-          setEstado((anterior) => (anterior === 'logado' ? anterior : 'entrar'))
-        }
-      } catch {
-        if (!cancelado) setEstado((anterior) => (anterior === 'logado' ? anterior : 'fora-do-ar'))
-      }
-    }
-
-    conectar()
-    return () => {
-      cancelado = true
-    }
-  }, [recomecar])
+    quandoSessaoExpirar(() => {
+      setSessao(null)
+      setAviso('Sua sessão terminou. Entre de novo para continuar.')
+      setEntrando(true)
+    })
+  }, [])
 
   // Ao voltar para a aba, confere se a sessão continua valendo: a pessoa pode
   // ter saído em outro aparelho, o que encerra esta sessão também.
   useEffect(() => {
-    if (estado !== 'logado') return
+    if (!sessao) return
     const aoVoltar = () => {
-      if (document.visibilityState === 'visible') sessaoAtual().catch(() => {})
+      if (document.visibilityState === 'visible') sessaoAtual().then((atual) => !atual && setSessao(null)).catch(() => {})
     }
     document.addEventListener('visibilitychange', aoVoltar)
     return () => document.removeEventListener('visibilitychange', aoVoltar)
-  }, [estado])
-
-  if (estado === 'logado' && sessao) {
-    return (
-      <TelaMapa
-        sessao={sessao}
-        aoSair={async () => {
-          await sair()
-          encerrar(null)
-        }}
-      />
-    )
-  }
+  }, [sessao])
 
   return (
-    <TelaEntrada
-      conectando={estado === 'conectando'}
-      foraDoAr={estado === 'fora-do-ar'}
-      tentativaConexao={tentativaConexao}
-      aviso={aviso}
-      aoTentarDeNovo={() => setRecomecar((n) => n + 1)}
-      aoAutenticar={(nova) => {
-        setSessao(nova)
-        setAviso(null)
-        setEstado('logado')
-      }}
-    />
+    <>
+      <TelaMapa
+        sessao={sessao}
+        aoPedirLogin={() => setEntrando(true)}
+        aoSair={async () => {
+          await sair()
+          setSessao(null)
+        }}
+      />
+      {entrando && (
+        <TelaEntrada
+          aviso={aviso}
+          aoFechar={() => {
+            setEntrando(false)
+            setAviso(null)
+          }}
+          aoAutenticar={(nova) => {
+            setSessao(nova)
+            setAviso(null)
+            setEntrando(false)
+          }}
+        />
+      )}
+    </>
   )
 }
 
 /** O mapa do parque, com lista, filtros, agenda e navegação até os pontos. */
-function TelaMapa({ sessao, aoSair }) {
+function TelaMapa({ sessao, aoSair, aoPedirLogin }) {
   const [categorias, setCategorias] = useState([])
   const [pois, setPois] = useState([])
   const [eventos, setEventos] = useState([])
@@ -195,6 +162,11 @@ function TelaMapa({ sessao, aoSair }) {
     return () => navigator.geolocation.clearWatch(observador)
   }, [])
 
+  // Baixa a rede de caminhos logo ao abrir, para a primeira rota sair na hora.
+  useEffect(() => {
+    carregarRede().catch(() => {})
+  }, [])
+
   useEffect(() => {
     document.body.classList.toggle('fonte-grande', fonteGrande)
   }, [fonteGrande])
@@ -215,26 +187,26 @@ function TelaMapa({ sessao, aoSair }) {
   )
 
   /**
-   * Traça a rota até o destino. Com o filtro de acessibilidade ligado, a rota
-   * desvia das escadas.
+   * Traça a rota até o destino, no próprio aparelho. Com o filtro de
+   * acessibilidade ligado, a rota desvia das escadas.
    *
    * @param silencioso recálculo automático no meio do caminho: não mexe no
    *        painel nem reenquadra a tela de quem está andando
    */
   const tracarRota = useCallback(
-    async (destinoId, { silencioso = false } = {}) => {
-      if (!destinoId || !posicaoUsuario) return
+    async (destino, { silencioso = false } = {}) => {
+      if (!destino || !posicaoUsuario) return
       ultimoCalculo.current = Date.now()
       if (!silencioso) setCalculandoRota(true)
       try {
-        const nova = await calcularRota(
-          destinoId,
+        const nova = await tracarRotaAte(
+          destino,
           posicaoUsuario.coords[0],
           posicaoUsuario.coords[1],
           somenteAcessiveis,
         )
         if (silencioso) {
-          // Só substitui se a pessoa não encerrou a rota enquanto o pedido ia e voltava.
+          // Só substitui se a pessoa não encerrou a rota enquanto o cálculo rodava.
           setRota((atual) => (atual ? { ...nova, recalculada: true } : atual))
         } else {
           setRota(nova)
@@ -252,7 +224,7 @@ function TelaMapa({ sessao, aoSair }) {
     [posicaoUsuario, somenteAcessiveis, mostrarErro],
   )
 
-  const pedirRota = useCallback(() => tracarRota(poiSelecionado?.id), [tracarRota, poiSelecionado])
+  const pedirRota = useCallback(() => tracarRota(poiSelecionado), [tracarRota, poiSelecionado])
 
   const encerrarRota = useCallback(() => {
     setRota(null)
@@ -281,7 +253,7 @@ function TelaMapa({ sessao, aoSair }) {
     // Afastamento menor que a margem de erro do GPS não é desvio: é ruído.
     const margem = Math.max(DESVIO_PARA_RECALCULAR_M, posicaoUsuario.precisao ?? 0)
     if (andamento?.afastamento > margem && Date.now() - ultimoCalculo.current > INTERVALO_RECALCULO_MS) {
-      tracarRota(rota.destino.id, { silencioso: true })
+      tracarRota(rota.destino, { silencioso: true })
     }
   }, [rota, chegou, posicaoUsuario, andamento, tracarRota])
 
@@ -318,7 +290,13 @@ function TelaMapa({ sessao, aoSair }) {
           </div>
         </div>
         <div className="topo-acoes">
-          <Conta sessao={sessao} aoSair={aoSair} />
+          {sessao ? (
+            <Conta sessao={sessao} aoSair={aoSair} />
+          ) : (
+            <button type="button" className="botao-conta" onClick={aoPedirLogin}>
+              Entrar
+            </button>
+          )}
           <button
             type="button"
             className="botao-fonte"
@@ -449,6 +427,7 @@ function TelaMapa({ sessao, aoSair }) {
                   temLocalizacao={Boolean(posicaoUsuario)}
                   evitandoEscadas={somenteAcessiveis}
                   sessao={sessao}
+                  aoPedirLogin={aoPedirLogin}
                   // Uma nota nova muda a media do ponto: recarrega a lista para o
                   // card e o item da lista mostrarem o mesmo numero.
                   aoMudarAvaliacao={() => setTentativa((n) => n + 1)}

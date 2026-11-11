@@ -1,14 +1,13 @@
 // Camada de acesso à API do Smart Park.
 //
 // Todas as chamadas saem como caminho relativo (/api/...), na mesma origem do
-// site: em desenvolvimento o Vite encaminha para o Spring Boot, e na Vercel uma
-// regra de rewrite (frontend/vercel.json) encaminha para a API na Render. Estar
-// na mesma origem é o que permite a sessão viajar num cookie HttpOnly, que o
-// JavaScript desta página não consegue ler — uma falha de XSS não entregaria o
-// token a ninguém.
+// site: em desenvolvimento o Vite encaminha para a API local (porta 8787), e na
+// Vercel site e API são o mesmo projeto. Estar na mesma origem é o que permite a
+// sessão viajar num cookie HttpOnly, que o JavaScript desta página não consegue
+// ler — uma falha de XSS não entregaria o token a ninguém.
 //
-// Não há dados embutidos de reserva: o mapa só existe para quem entrou, e uma
-// cópia dentro do JavaScript ficaria à vista de qualquer pessoa.
+// O mapa é aberto: consultar o parque não exige conta. A conta só é pedida para
+// avaliar e para as missões.
 
 /** Cabeçalho que a API exige em toda requisição que altera algo (proteção CSRF). */
 const CABECALHO_DO_SITE = { 'X-Requested-With': 'SmartPark' }
@@ -86,8 +85,8 @@ async function pedir(
   }
 
   if (!resposta.ok) {
-    // O backend sempre responde { status, erro, mensagem }. Sem esse corpo, quem
-    // respondeu não foi a API (502/504 do proxy enquanto ela acorda, por exemplo).
+    // A API sempre responde { status, erro, mensagem }. Sem esse corpo, quem
+    // respondeu não foi a API (um 502 da rede, por exemplo).
     if (dados?.mensagem) throw new Error(dados.mensagem)
     throw new ApiIndisponivel()
   }
@@ -96,37 +95,11 @@ async function pedir(
   return dados
 }
 
-// ------------------------------------------------------------------ servidor ---
-
-/**
- * Espera a API ficar de pé.
- *
- * No plano gratuito da Render a API hiberna depois de 15 minutos parada e leva
- * perto de um minuto para acordar. A tela de entrada chama isto ao abrir, para o
- * servidor ir acordando enquanto a pessoa digita a senha.
- *
- * @param aoTentar recebe o número da tentativa, para a tela mostrar o progresso
- */
-export async function acordarServidor(aoTentar = () => {}, { tentativas = 12 } = {}) {
-  for (let tentativa = 1; tentativa <= tentativas; tentativa++) {
-    aoTentar(tentativa)
-    try {
-      // Checar o servidor nunca encerra a sessão: um 401 aqui significa só que
-      // quem respondeu não é esta versão da API (por exemplo, durante um deploy).
-      await pedir('/api/saude', { tempoLimite: 20_000, avisarSeExpirar: false })
-      return true
-    } catch {
-      await new Promise((pronto) => setTimeout(pronto, 3_000))
-    }
-  }
-  return false
-}
-
 // -------------------------------------------------------------------- sessão ---
 
 /** RF02: entra e abre a sessão (o token fica no cookie, longe do JavaScript). */
 export const entrar = (email, senha) =>
-  pedir('/api/usuarios/login', { metodo: 'POST', corpo: { email, senha }, tempoLimite: 60_000 })
+  pedir('/api/usuarios/login', { metodo: 'POST', corpo: { email, senha } })
 
 /**
  * RF01: cria a conta e já entra com ela.
@@ -135,7 +108,7 @@ export const entrar = (email, senha) =>
  * seguida, sem pedir a senha de novo.
  */
 export async function cadastrar(nome, email, senha) {
-  await pedir('/api/usuarios', { metodo: 'POST', corpo: { nome, email, senha }, tempoLimite: 60_000 })
+  await pedir('/api/usuarios', { metodo: 'POST', corpo: { nome, email, senha } })
   return entrar(email, senha)
 }
 
@@ -144,7 +117,7 @@ export async function sessaoAtual() {
   try {
     // Sem sessão ao abrir o site não é "sessão expirada": é só alguém que ainda
     // não entrou. Por isso esta conferência não dispara o aviso de expiração.
-    const usuario = await pedir('/api/usuarios/eu', { tempoLimite: 60_000, avisarSeExpirar: false })
+    const usuario = await pedir('/api/usuarios/eu', { avisarSeExpirar: false })
     return { usuario }
   } catch (erro) {
     if (erro instanceof SessaoExpirada) return null
@@ -179,17 +152,12 @@ export const listarPois = (filtros = {}) =>
 
 export const listarEventos = () => pedir('/api/eventos')
 
-/** RF05: rota a pé pelos caminhos do parque, opcionalmente sem escadas. */
-export const calcularRota = (poiId, lat, lon, evitarEscadas = false) =>
-  pedir(`/api/pois/${poiId}/rota`, {
-    parametros: { lat, lon, evitarEscadas: evitarEscadas ? true : undefined },
-  })
 
 // --------------------------------------------------------------- avaliação ---
 
 export const listarAvaliacoes = (poiId) => pedir(`/api/pois/${poiId}/avaliacoes`)
 
-/** RF11: avalia de 1 a 5. Avaliar de novo substitui a nota anterior. */
+/** RF10: avalia de 1 a 5. Avaliar de novo substitui a nota anterior. */
 export const avaliar = (poiId, nota, comentario) =>
   pedir(`/api/pois/${poiId}/avaliacoes`, {
     metodo: 'POST',
