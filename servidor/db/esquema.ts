@@ -41,6 +41,7 @@ export const usuarios = pgTable('tb_usuario', {
   dataCadastro: instante('data_cadastro').notNull(),
   ultimoAcesso: instante('ultimo_acesso'),
   versaoToken: integer('versao_token').notNull().default(0),
+  perfilPublico: boolean('perfil_publico').notNull().default(true),
 })
 
 export type StatusOperacional = 'EM_FUNCIONAMENTO' | 'EM_MANUTENCAO' | 'FECHADO'
@@ -120,5 +121,69 @@ export const conclusoes = pgTable('tb_conclusao_missao', {
   usuarioId: ref('id_usuario').notNull(),
   missaoId: ref('id_missao').notNull(),
   periodo: varchar('periodo', { length: 10 }).notNull(),
+  momento: instante('momento').notNull(),
+})
+
+export const favoritos = pgTable('tb_favorito', {
+  usuarioId: ref('id_usuario').notNull(),
+  poiId: ref('id_poi').notNull(),
+  momento: instante('momento').notNull(),
+})
+
+export type TipoProblema = 'LIMPEZA' | 'QUEBRADO' | 'FECHADO' | 'SEGURANCA' | 'ACESSIBILIDADE' | 'INFORMACAO' | 'OUTRO'
+export type SituacaoProblema = 'ABERTO' | 'RESOLVIDO' | 'DESCARTADO'
+
+export const problemas = pgTable('tb_problema', {
+  id: id(),
+  usuarioId: ref('id_usuario').notNull(),
+  poiId: ref('id_poi').notNull(),
+  tipo: varchar('tipo', { length: 30 }).$type<TipoProblema>().notNull(),
+  descricao: varchar('descricao', { length: 600 }),
+  situacao: varchar('situacao', { length: 20 }).$type<SituacaoProblema>().notNull(),
+  momento: instante('momento').notNull(),
+  resolvido: instante('resolvido'),
+})
+
+export const avisos = pgTable('tb_aviso', {
+  id: id(),
+  titulo: varchar('titulo', { length: 120 }).notNull(),
+  texto: varchar('texto', { length: 600 }).notNull(),
+  poiId: ref('id_poi'),
+  inicio: instante('inicio').notNull(),
+  fim: instante('fim'),
+  autorId: ref('id_autor').notNull(),
+})
+
+export const publicacoes = pgTable('tb_publicacao', {
+  id: id(),
+  usuarioId: ref('id_usuario').notNull(),
+  texto: varchar('texto', { length: 500 }).notNull(),
+  poiId: ref('id_poi'),
+  momento: instante('momento').notNull(),
+  oculta: boolean('oculta').notNull().default(false),
+})
+
+export const curtidas = pgTable('tb_curtida', {
+  publicacaoId: ref('id_publicacao').notNull(),
+  usuarioId: ref('id_usuario').notNull(),
+})
+
+export const comentarios = pgTable('tb_comentario', {
+  id: id(),
+  publicacaoId: ref('id_publicacao').notNull(),
+  usuarioId: ref('id_usuario').notNull(),
+  texto: varchar('texto', { length: 300 }).notNull(),
+  momento: instante('momento').notNull(),
+})
+
+export const denuncias = pgTable('tb_denuncia', {
+  publicacaoId: ref('id_publicacao').notNull(),
+  usuarioId: ref('id_usuario').notNull(),
+  momento: instante('momento').notNull(),
+})
+
+export const seguidores = pgTable('tb_seguidor', {
+  seguidorId: ref('id_seguidor').notNull(),
+  seguidoId: ref('id_seguido').notNull(),
   momento: instante('momento').notNull(),
 })

@@ -11,12 +11,27 @@
  * - O token vai num cookie HttpOnly, nunca no corpo da resposta.
  */
 import { Hono } from 'hono'
-import { asc, eq, lt, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, lt, ne, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Ambiente, Ctx, UsuarioLogado } from '../contexto.js'
 import { corpoJson, exigirAdministrador, exigirLogin, idDaRota } from '../contexto.js'
 import type { Banco } from '../db/conexao.js'
-import { avaliacoes, checkins, conclusoes, progressosLegados, tentativasLogin, usuarios } from '../db/esquema.js'
+import {
+  avaliacoes,
+  avisos,
+  checkins,
+  comentarios,
+  conclusoes,
+  curtidas,
+  denuncias,
+  favoritos,
+  problemas,
+  progressosLegados,
+  publicacoes,
+  seguidores,
+  tentativasLogin,
+  usuarios,
+} from '../db/esquema.js'
 import { ErroHttp } from '../erros.js'
 import { conferirSenha, gerarHash, hashParaComparacaoFalsa, validarSenhaNova } from '../seguranca/senha.js'
 import { cookieApagado, cookieDeSessao, emitirToken } from '../seguranca/sessao.js'
@@ -191,6 +206,27 @@ export const rotasUsuarios = new Hono<Ambiente>()
     await banco.delete(checkins).where(eq(checkins.usuarioId, id))
     await banco.delete(conclusoes).where(eq(conclusoes.usuarioId, id))
     await banco.delete(progressosLegados).where(eq(progressosLegados.usuarioId, id))
+    await banco.delete(favoritos).where(eq(favoritos.usuarioId, id))
+    await banco.delete(problemas).where(eq(problemas.usuarioId, id))
+    await banco.delete(seguidores).where(or(eq(seguidores.seguidorId, id), eq(seguidores.seguidoId, id)))
+    await banco.delete(curtidas).where(eq(curtidas.usuarioId, id))
+    await banco.delete(comentarios).where(eq(comentarios.usuarioId, id))
+    await banco.delete(denuncias).where(eq(denuncias.usuarioId, id))
+    // Publicações da pessoa saem com tudo o que outras pessoas fizeram nelas
+    const minhas = (await banco.select({ id: publicacoes.id }).from(publicacoes).where(eq(publicacoes.usuarioId, id))).map((p) => p.id)
+    if (minhas.length) {
+      await banco.delete(curtidas).where(inArray(curtidas.publicacaoId, minhas))
+      await banco.delete(comentarios).where(inArray(comentarios.publicacaoId, minhas))
+      await banco.delete(denuncias).where(inArray(denuncias.publicacaoId, minhas))
+      await banco.delete(publicacoes).where(inArray(publicacoes.id, minhas))
+    }
+    // Avisos oficiais continuam no ar: passam para outra conta de administração, se houver
+    const [outroAdmin] = await banco
+      .select({ id: usuarios.id })
+      .from(usuarios)
+      .where(and(eq(usuarios.perfil, 'ADMINISTRADOR'), ne(usuarios.id, id)))
+    if (outroAdmin) await banco.update(avisos).set({ autorId: outroAdmin.id }).where(eq(avisos.autorId, id))
+    else await banco.delete(avisos).where(eq(avisos.autorId, id))
     await banco.delete(usuarios).where(eq(usuarios.id, id))
     if (logado.id === id) c.header('Set-Cookie', cookieApagado(c.get('config')))
     return c.body(null, 204)

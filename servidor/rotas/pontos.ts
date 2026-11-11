@@ -10,7 +10,7 @@ import { coordenadaValida, distanciaEmMetros } from '../../compartilhado/distanc
 import type { Ambiente, Ctx } from '../contexto.js'
 import { corpoJson, exigirAdministrador, idDaRota } from '../contexto.js'
 import type { Banco } from '../db/conexao.js'
-import { avaliacoes, categorias, checkins, eventos, pontos } from '../db/esquema.js'
+import { avaliacoes, avisos, categorias, checkins, eventos, favoritos, pontos, problemas, publicacoes } from '../db/esquema.js'
 import { ErroHttp } from '../erros.js'
 
 type Ponto = typeof pontos.$inferSelect
@@ -183,6 +183,10 @@ export const rotasPontos = new Hono<Ambiente>()
     // com o ponto, mas guardam o nome do local como texto.
     await banco.delete(avaliacoes).where(eq(avaliacoes.poiId, id))
     await banco.delete(checkins).where(eq(checkins.poiId, id))
+    await banco.delete(favoritos).where(eq(favoritos.poiId, id))
+    await banco.delete(problemas).where(eq(problemas.poiId, id))
+    await banco.update(avisos).set({ poiId: null }).where(eq(avisos.poiId, id))
+    await banco.update(publicacoes).set({ poiId: null }).where(eq(publicacoes.poiId, id))
     await banco
       .update(eventos)
       .set({ poiId: null, localDescritivo: p.nome })

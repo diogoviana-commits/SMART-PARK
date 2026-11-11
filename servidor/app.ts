@@ -12,6 +12,17 @@ import { rotasAvaliacoes } from './rotas/avaliacoes.js'
 import { rotasEventos } from './rotas/eventos.js'
 import { rotasMissoes, rotasVisitas } from './rotas/missoes.js'
 import { rotasCategorias, rotasPontos } from './rotas/pontos.js'
+import {
+  rotasAvisos,
+  rotasDoPonto,
+  rotasFavoritos,
+  rotasFeed,
+  rotasPerfil,
+  rotasPerfis,
+  rotasProblemas,
+  rotasPublicacoes,
+  rotasRanking,
+} from './rotas/comunidade.js'
 import { rotasUsuarios } from './rotas/usuarios.js'
 
 export function criarApp(banco: Banco, config: Configuracao) {
@@ -31,10 +42,19 @@ export function criarApp(banco: Banco, config: Configuracao) {
   app.route('/categorias', rotasCategorias)
   app.route('/pois', rotasPontos)
   app.route('/pois/:poiId{[0-9]+}/avaliacoes', rotasAvaliacoes)
+  app.route('/pois/:poiId{[0-9]+}', rotasDoPonto)
   app.route('/eventos', rotasEventos)
   app.route('/usuarios', rotasUsuarios)
   app.route('/missoes', rotasMissoes)
   app.route('/visitas', rotasVisitas)
+  app.route('/favoritos', rotasFavoritos)
+  app.route('/problemas', rotasProblemas)
+  app.route('/avisos', rotasAvisos)
+  app.route('/feed', rotasFeed)
+  app.route('/publicacoes', rotasPublicacoes)
+  app.route('/perfil', rotasPerfil)
+  app.route('/perfis', rotasPerfis)
+  app.route('/ranking', rotasRanking)
 
   app.notFound((c) => c.json(corpoDeErro(404, 'Rota não encontrada.'), 404))
   app.onError(tratarErro)
