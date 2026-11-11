@@ -16,6 +16,10 @@ import { existsSync } from 'node:fs'
 import { createInterface } from 'node:readline'
 import { fileURLToPath } from 'node:url'
 
+// O Node avisa (DEP0190) que argumentos com shell não são escapados; aqui nenhum
+// argumento vem de fora do script, e no Windows os CLIs .cmd precisam do shell.
+process.noDeprecation = true
+
 const PROJETO_VERCEL = 'smart-park'
 const RAIZ = fileURLToPath(new URL('..', import.meta.url))
 
@@ -27,13 +31,14 @@ const falhar = (t) => {
 }
 
 /** Roda um comando; `entrada` vai pelo stdin (nunca como argumento, para não aparecer em lugar nenhum). */
-function rodar(comando, args, { entrada, mostrar = false } = {}) {
+function rodar(comando, args, { entrada, mostrar = false, semEntrada = false } = {}) {
   const r = spawnSync(comando, args, {
     cwd: RAIZ,
     input: entrada,
     encoding: 'utf8',
     shell: process.platform === 'win32',
-    stdio: [entrada === undefined ? 'inherit' : 'pipe', mostrar ? 'inherit' : 'pipe', mostrar ? 'inherit' : 'pipe'],
+    // semEntrada: o comando não pode parar esperando uma resposta que ninguém vê
+    stdio: [semEntrada ? 'ignore' : entrada === undefined ? 'inherit' : 'pipe', mostrar ? 'inherit' : 'pipe', mostrar ? 'inherit' : 'pipe'],
   })
   return { codigo: r.status, saida: (r.stdout ?? '').trim(), erro: (r.stderr ?? '').trim() }
 }
@@ -55,7 +60,27 @@ function perguntar(pergunta, { oculto = false } = {}) {
   })
 }
 
-const neon = (args) => rodar('npx', ['-y', 'neonctl@latest', ...args])
+const neon = (args) => rodar('npx', ['-y', 'neonctl@latest', ...args], { semEntrada: true })
+
+/** Lista em JSON do CLI do Neon; vazia se não der. */
+function listaNeon(args) {
+  try {
+    const dados = JSON.parse(neon([...args, '--output', 'json']).saida)
+    return Array.isArray(dados) ? dados : (Object.values(dados).find(Array.isArray) ?? [])
+  } catch {
+    return []
+  }
+}
+
+/** Uma opção da lista: se só houver uma, ela; se houver várias, pergunta. */
+async function escolher(itens, descricao, preferida) {
+  if (itens.length <= 1) return itens[0]
+  const padrao = itens.findIndex((i) => i.name === preferida)
+  itens.forEach((i, n) => console.log(`   ${n + 1}) ${i.name}${n === padrao ? '  (sugerido)' : ''}`))
+  const resposta = await perguntar(`  Qual ${descricao}? Número${padrao >= 0 ? ' (Enter = sugerido)' : ''}: `)
+  if (!resposta && padrao >= 0) return itens[padrao]
+  return itens[Number(resposta) - 1]
+}
 
 async function enderecoDoNeon() {
   titulo('1/4  Banco no Neon')
@@ -81,13 +106,25 @@ async function enderecoDoNeon() {
   }
 
   if (projeto) {
-    // Sem pooling é o padrão do CLI
-    const r = neon(['connection-string', '--project-id', projeto.id])
-    if (r.codigo === 0 && r.saida.startsWith('postgres')) {
-      ok(`endereço obtido do projeto "${projeto.name}"`)
-      return r.saida.split(/\r?\n/).pop().trim()
+    console.log(`  Projeto "${projeto.name}". Buscando os bancos e usuários dele...`)
+    const bancos = listaNeon(['databases', 'list', '--project-id', projeto.id])
+    const banco = await escolher(bancos, 'é o banco do Smart Park', 'neondb')
+    const usuarios = listaNeon(['roles', 'list', '--project-id', projeto.id])
+    const usuario = await escolher(usuarios, 'usuário usar', banco?.owner_name)
+
+    const args = ['connection-string', '--project-id', projeto.id] // sem pooling é o padrão do CLI
+    if (banco) args.push('--database-name', banco.name)
+    if (usuario) args.push('--role-name', usuario.name)
+    const r = neon(args)
+    const url = r.saida
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .find((l) => l.startsWith('postgres'))
+    if (r.codigo === 0 && url) {
+      ok(`endereço obtido (projeto "${projeto.name}", banco "${banco?.name ?? 'padrão'}")`)
+      return url
     }
-    console.log('  O CLI do Neon não devolveu o endereço (o projeto pode ter mais de um banco).')
+    console.log(`  O CLI do Neon não devolveu o endereço${r.erro ? `: ${r.erro.split(/\r?\n/)[0]}` : '.'}`)
   }
 
   console.log('\n  Copie o endereço à mão: console.neon.tech > projeto > Connect,')
