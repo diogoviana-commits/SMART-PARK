@@ -1,17 +1,17 @@
-# Java / Maven
-target/
-*.class
-*.jar
-!.mvn/wrapper/maven-wrapper.jar
-
 # Node
 node_modules/
 dist/
+.vite/
+
+# Vercel
+.vercel/
+
+# Banco local de desenvolvimento (PGlite)
+.dados-locais/
 
 # Editores
 .vscode/
 .idea/
-*.iml
 
 # Sistema
 Thumbs.db
@@ -25,8 +25,9 @@ Thumbs.db
 # variaveis existem
 !.env.example
 
-# Build do frontend copiado para dentro do backend pelo SmartPark.bat
-mapbackend/src/main/resources/static/
-
-# ZIP do repositorio baixado do GitHub, extraido dentro da pasta por engano
-SMART-PARK-main/
+# Documentos do grupo guardados na pasta, mas fora do repositorio
+*.docx
+*.pdf
+*.zip
+*.pptx
+*.xlsx

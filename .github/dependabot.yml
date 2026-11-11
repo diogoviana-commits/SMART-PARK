@@ -1,19 +1,11 @@
 # Abre pull requests semanais atualizando as dependências. Cada PR passa pelo
 # fluxo de Testes antes de ser juntado. As atualizações pequenas vêm agrupadas
-# em um PR só por pasta, para não encher a lista.
+# em um PR só, para não encher a lista.
 
 version: 2
 updates:
-  - package-ecosystem: maven
-    directory: /mapbackend
-    schedule:
-      interval: weekly
-    groups:
-      menores:
-        update-types: [minor, patch]
-
   - package-ecosystem: npm
-    directory: /frontend
+    directory: /
     schedule:
       interval: weekly
     groups:
