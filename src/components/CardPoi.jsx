@@ -1,6 +1,81 @@
+import { useEffect, useState } from 'react'
 import { IconeCategoria } from '../icones.jsx'
 import Avaliacoes from './Avaliacoes.jsx'
-import { distanciaLegivel } from '../geo.js'
+import { distancia, distanciaLegivel } from '../geo.js'
+import { desfavoritar, favoritar, listarFavoritos, registrarVisita, reportarProblema } from '../api.js'
+
+const TIPOS_DE_PROBLEMA = [
+  ['LIMPEZA', 'Sujo ou sem limpeza'],
+  ['QUEBRADO', 'Quebrado ou com defeito'],
+  ['FECHADO', 'Fechado no horário de funcionamento'],
+  ['ACESSIBILIDADE', 'Problema de acessibilidade'],
+  ['SEGURANCA', 'Risco à segurança'],
+  ['INFORMACAO', 'Informação errada no app'],
+  ['OUTRO', 'Outro'],
+]
+
+/** A visita só vale a até 30 m do ponto (o servidor confere de novo). */
+const RAIO_DA_VISITA_M = 30
+
+/** Favoritos de quem está logado, carregados uma vez e compartilhados entre os cards. */
+let favoritosCarregados = null
+
+function ReportarProblema({ poi, aoFechar }) {
+  const [tipo, setTipo] = useState('')
+  const [descricao, setDescricao] = useState('')
+  const [estado, setEstado] = useState('editando')
+  const [erro, setErro] = useState(null)
+
+  async function enviar(evento) {
+    evento.preventDefault()
+    setEstado('enviando')
+    try {
+      await reportarProblema(poi.id, tipo, descricao)
+      setEstado('enviado')
+    } catch (e) {
+      setErro(e.message)
+      setEstado('editando')
+    }
+  }
+
+  if (estado === 'enviado') {
+    return (
+      <div className="aviso aviso-sucesso" role="status">
+        <div>
+          Obrigado! A administração do parque recebeu o aviso sobre {poi.nome}.{' '}
+          <button type="button" onClick={aoFechar}>Fechar</button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <form className="form-problema" onSubmit={enviar}>
+      <fieldset>
+        <legend>O que está acontecendo em {poi.nome}?</legend>
+        {TIPOS_DE_PROBLEMA.map(([valor, rotulo]) => (
+          <label key={valor} className="opcao">
+            <input type="radio" name="tipo-problema" value={valor} checked={tipo === valor} onChange={() => setTipo(valor)} required />
+            {rotulo}
+          </label>
+        ))}
+      </fieldset>
+      <label className="campo">
+        <span>Detalhes (opcional)</span>
+        <textarea rows={2} maxLength={600} value={descricao} onChange={(e) => setDescricao(e.target.value)} />
+      </label>
+      {erro && <p className="caixa-erro" role="alert">{erro}</p>}
+      <div className="confirmacao-acoes">
+        <button type="submit" className="botao-principal" disabled={!tipo || estado === 'enviando'}>
+          {estado === 'enviando' ? 'Enviando…' : 'Enviar aviso'}
+        </button>
+        <button type="button" className="botao-discreto" onClick={aoFechar}>
+          Cancelar
+        </button>
+      </div>
+    </form>
+  )
+}
 
 const ROTULOS_STATUS = {
   EM_FUNCIONAMENTO: 'Aberto',
@@ -23,11 +98,55 @@ export default function CardPoi({
   calculandoRota,
   aoPedirRota,
   temLocalizacao,
+  posicaoUsuario,
   evitandoEscadas,
   sessao,
   aoMudarAvaliacao,
   aoPedirLogin,
 }) {
+  const [favorito, setFavorito] = useState(false)
+  const [reportando, setReportando] = useState(false)
+  const [visita, setVisita] = useState(null)
+
+  useEffect(() => {
+    setReportando(false)
+    setVisita(null)
+    if (!sessao) {
+      favoritosCarregados = null
+      setFavorito(false)
+      return
+    }
+    favoritosCarregados ??= listarFavoritos().then((lista) => new Set(lista.map((f) => f.id))).catch(() => new Set())
+    favoritosCarregados.then((ids) => setFavorito(ids.has(poi.id)))
+  }, [poi.id, sessao])
+
+  async function alternarFavorito() {
+    if (!sessao) return aoPedirLogin()
+    const novo = !favorito
+    setFavorito(novo)
+    try {
+      await (novo ? favoritar(poi.id) : desfavoritar(poi.id))
+      const ids = await favoritosCarregados
+      if (ids) novo ? ids.add(poi.id) : ids.delete(poi.id)
+    } catch {
+      setFavorito(!novo)
+    }
+  }
+
+  const afastamento = posicaoUsuario ? distancia(posicaoUsuario.coords, [poi.latitude, poi.longitude]) : null
+  const pertoDoPonto = afastamento !== null && afastamento <= RAIO_DA_VISITA_M
+
+  async function marcarVisita() {
+    if (!sessao) return aoPedirLogin()
+    setVisita({ estado: 'enviando' })
+    try {
+      const r = await registrarVisita(poi.id, posicaoUsuario.coords[0], posicaoUsuario.coords[1])
+      setVisita({ estado: 'feita', concluidas: r.missoesConcluidas })
+    } catch (e) {
+      setVisita({ estado: 'erro', mensagem: e.message })
+    }
+  }
+
   const rotaDesteponto = rota && rota.destino.id === poi.id ? rota : null
 
   return (
@@ -51,7 +170,32 @@ export default function CardPoi({
         </div>
       </div>
 
+      <div className="card-atalhos">
+        <button
+          type="button"
+          className="botao-icone-card"
+          aria-pressed={favorito}
+          aria-label={favorito ? 'Remover dos favoritos' : 'Favoritar'}
+          title={favorito ? 'Remover dos favoritos' : 'Favoritar'}
+          onClick={alternarFavorito}
+        >
+          {favorito ? '★' : '☆'}
+        </button>
+        <button
+          type="button"
+          className="botao-icone-card"
+          aria-expanded={reportando}
+          aria-label="Reportar problema"
+          title="Reportar problema"
+          onClick={() => (sessao ? setReportando((v) => !v) : aoPedirLogin())}
+        >
+          ⚑
+        </button>
+      </div>
+
       {poi.descricao && <p className="card-descricao">{poi.descricao}</p>}
+
+      {reportando && <ReportarProblema poi={poi} aoFechar={() => setReportando(false)} />}
 
       <dl className="dados">
         <div className="dado">
@@ -99,6 +243,23 @@ export default function CardPoi({
           </div>
         )}
       </div>
+
+      {pertoDoPonto && visita?.estado !== 'feita' && (
+        <div className="estou-aqui">
+          <button type="button" className="botao-lima" onClick={marcarVisita} disabled={visita?.estado === 'enviando'}>
+            {visita?.estado === 'enviando' ? 'Registrando…' : 'Estou aqui: registrar visita'}
+          </button>
+          {visita?.estado === 'erro' && <p className="caixa-erro" role="alert">{visita.mensagem}</p>}
+        </div>
+      )}
+      {visita?.estado === 'feita' && (
+        <div className="aviso aviso-sucesso" role="status">
+          <div>
+            Visita registrada (+10 XP)
+            {visita.concluidas.length > 0 && <> · Missão concluída: {visita.concluidas.join(', ')}!</>}
+          </div>
+        </div>
+      )}
 
       <Avaliacoes
         poi={poi}

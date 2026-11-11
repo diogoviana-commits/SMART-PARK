@@ -166,3 +166,44 @@ export const avaliar = (poiId, nota, comentario) =>
 
 export const removerAvaliacao = (poiId, avaliacaoId) =>
   pedir(`/api/pois/${poiId}/avaliacoes/${avaliacaoId}`, { metodo: 'DELETE' })
+
+// ------------------------------------------------------- missões e visitas ---
+
+export const listarMissoes = () => pedir('/api/missoes')
+
+/** Registra a visita a um ponto; o servidor confere se a posição está a até 30 m. */
+export const registrarVisita = (poiId, latitude, longitude) =>
+  pedir('/api/visitas', { metodo: 'POST', corpo: { poiId, latitude, longitude } })
+
+export const pontosProximos = (lat, lon, raio = 30) =>
+  pedir('/api/pois/proximos', { parametros: { lat, lon, raio } })
+
+// ------------------------------------------------------ favoritos e problemas ---
+
+export const listarFavoritos = () => pedir('/api/favoritos')
+export const favoritar = (poiId) => pedir(`/api/pois/${poiId}/favorito`, { metodo: 'POST' })
+export const desfavoritar = (poiId) => pedir(`/api/pois/${poiId}/favorito`, { metodo: 'DELETE' })
+export const reportarProblema = (poiId, tipo, descricao) =>
+  pedir(`/api/pois/${poiId}/problemas`, { metodo: 'POST', corpo: { tipo, descricao: descricao?.trim() || null } })
+
+// ---------------------------------------------------------------------- feed ---
+
+export const carregarFeed = (aba = 'para-voce') => pedir('/api/feed', { parametros: { aba } })
+export const publicar = (texto, poiId) =>
+  pedir('/api/publicacoes', { metodo: 'POST', corpo: { texto, poiId: poiId || null } })
+export const apagarPublicacao = (id) => pedir(`/api/publicacoes/${id}`, { metodo: 'DELETE' })
+export const curtir = (id, sim) => pedir(`/api/publicacoes/${id}/curtida`, { metodo: sim ? 'POST' : 'DELETE' })
+export const listarComentarios = (id) => pedir(`/api/publicacoes/${id}/comentarios`)
+export const comentar = (id, texto) =>
+  pedir(`/api/publicacoes/${id}/comentarios`, { metodo: 'POST', corpo: { texto } })
+export const denunciar = (id) => pedir(`/api/publicacoes/${id}/denuncia`, { metodo: 'POST' })
+
+// --------------------------------------------------- perfil, amigos e ranking ---
+
+export const meuPerfil = () => pedir('/api/perfil')
+export const atualizarPerfil = (dados) => pedir('/api/perfil', { metodo: 'PATCH', corpo: dados })
+export const perfilDe = (id) => pedir(`/api/perfis/${id}`)
+export const seguir = (id, sim) => pedir(`/api/perfis/${id}/seguir`, { metodo: sim ? 'POST' : 'DELETE' })
+export const quemSigo = () => pedir('/api/perfil/seguindo')
+export const ranking = (escopo = 'geral') => pedir('/api/ranking', { parametros: { escopo } })
+export const apagarConta = (id) => pedir(`/api/usuarios/${id}`, { metodo: 'DELETE' })

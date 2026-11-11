@@ -6,6 +6,7 @@ import {
   Polyline,
   Popup,
   TileLayer,
+  Tooltip,
   ZoomControl,
   useMap,
   useMapEvents,
@@ -118,6 +119,7 @@ export default function MapaParque({
   trajeto,
   seguindo,
   aoMudarSeguindo,
+  descrever = false,
 }) {
   return (
     <>
@@ -140,6 +142,12 @@ export default function MapaParque({
             eventHandlers={{ click: () => aoSelecionarPoi(poi) }}
             alt={poi.nome}
           >
+            {/* "Descrever imagens" (Ajustes): a categoria escrita junto do ícone */}
+            {descrever && (
+              <Tooltip permanent direction="right" offset={[12, -14]} className="rotulo-marcador">
+                {poi.categoria.nome}
+              </Tooltip>
+            )}
             <Popup>
               <strong>{poi.nome}</strong>
               <br />

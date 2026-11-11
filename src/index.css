@@ -11,21 +11,27 @@
    ============================================================================= */
 
 :root {
-  --mata: #20402f;
-  --mata-clara: #2f5d3f;
-  --folha: #567d4a;
-  --areia: #f2ece1;
-  --areia-escura: #e4dbc9;
-  --papel: #fbf9f4;
+  /* Design system do protótipo de alta fidelidade */
+  --mata: #0f2a1e; /* verde mata: fundos escuros, texto principal */
+  --mata-clara: #1e5b3f; /* verde: botão primário, destaques */
+  --lima: #cdeb58; /* acento, estado ativo, números */
+  --lago: #3e93a8; /* azul lago: informação secundária (decorativo) */
+  --lago-texto: #2b6f80; /* o mesmo azul, escurecido para texto (5,2:1) */
+  --ambar: #e8a33d; /* alerta, aviso, atenção */
+  --ambar-texto: #8a5a10;
+  --folha: #3f7a35;
+  --areia: #ece7d8;
+  --areia-escura: #e6e0ce;
+  --papel: #f7f4ec;
   --tinta: #1a241d;
-  --tinta-fraca: #6a7268;
+  --tinta-fraca: #5a6158; /* 4,8:1 sobre areia, 5,8:1 sobre papel */
   --tijolo: #b4542f;
   --linha: #d9d1c0;
   /* Contraste de 3:1 ou mais (WCAG 1.4.11) sobre os fundos claros */
   --foco: #3f7a35;
   /* Sobre os fundos escuros (cabeçalho e painel de entrada) */
-  --foco-escuro: #c9e27a;
-  /* Borda de campo de formulário: 3,5:1 sobre areia, 3,9:1 sobre papel */
+  --foco-escuro: #cdeb58;
+  /* Borda de campo de formulário: 3,7:1 sobre papel */
   --borda-campo: #857d6b;
 
   --raio: 10px;
@@ -33,8 +39,11 @@
   --sombra-sutil: 0 1px 2px rgba(26, 36, 29, 0.06);
   --sombra-flutuante: 0 -2px 24px rgba(26, 36, 29, 0.12);
 
-  --fonte-titulo: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
-  --fonte-texto: 'Public Sans', 'Segoe UI', system-ui, sans-serif;
+  --fonte-titulo: 'Bricolage Grotesque Variable', 'Segoe UI', system-ui, sans-serif;
+  --fonte-texto: 'Instrument Sans Variable', 'Segoe UI', system-ui, sans-serif;
+  --fonte-dados: 'JetBrains Mono Variable', ui-monospace, monospace;
+  /* altura da barra inferior de navegação */
+  --nav: calc(64px + env(safe-area-inset-bottom));
 
   /* altura do painel recolhido no celular */
   --peek: 172px;
@@ -84,7 +93,7 @@ body.fonte-grande {
 .app {
   display: flex;
   flex-direction: column;
-  height: 100dvh;
+  height: calc(100dvh - var(--nav));
   overflow: hidden;
 }
 
@@ -239,12 +248,12 @@ body.fonte-grande {
   z-index: 900;
   display: flex;
   flex-direction: column;
-  height: 82dvh;
+  height: calc(82dvh - var(--nav));
   background: var(--papel);
   border-top: 1px solid var(--linha);
   border-radius: var(--raio-g) var(--raio-g) 0 0;
   box-shadow: var(--sombra-flutuante);
-  transform: translateY(calc(82dvh - var(--peek)));
+  transform: translateY(calc(82dvh - var(--nav) - var(--peek)));
   transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
 }
 

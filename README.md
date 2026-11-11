@@ -25,6 +25,7 @@ Um projeto só na Vercel: o site e a API ficam no mesmo endereço.
 | Banco | PostgreSQL no Neon, acessado com Drizzle ORM |
 | Rota a pé | Calculada no próprio aparelho (Dijkstra sobre os caminhos do OpenStreetMap) |
 | Testes | Vitest + PGlite (PostgreSQL embutido), no GitHub Actions a cada push |
+| App instalável | PWA (vite-plugin-pwa / Workbox) |
 
 ```
 SMART-PARK/
@@ -77,7 +78,13 @@ npm run build     # gera o site em dist/
 
 ## O que o sistema faz
 
-O mapa é aberto: consultar o parque não exige conta. A conta é pedida para avaliar e para as missões.
+Cinco destinos na barra inferior, como no protótipo de alta fidelidade: **Mapa, Agenda, Missões,
+Feed e Perfil** (com Ajustes). O mapa é aberto: consultar o parque não exige conta. A conta é pedida
+para avaliar, publicar, seguir pessoas e fazer as missões.
+
+**Instalar no celular:** o site é um PWA. No Android, abra no Chrome e toque em "Instalar app"; no
+iPhone, abra no Safari › Compartilhar › "Adicionar à Tela de Início". Ele abre em tela cheia, com
+ícone próprio, e guarda o app, a rede de trilhas e as últimas consultas para funcionar com sinal fraco.
 
 | Recurso | Requisito |
 |---|---|
@@ -88,10 +95,14 @@ O mapa é aberto: consultar o parque não exige conta. A conta é pedida para av
 | Busca e filtros por categoria e acessibilidade | RF06 |
 | Card do ponto com situação, horário, acessibilidade e nota | RF07 (parcial: sem foto) |
 | Agenda dos próximos 30 dias | RF08 |
-| Missões com progresso verificado no servidor (API pronta; tela na próxima etapa) | RF09 (parcial) |
-| Avaliação de 1 a 5 estrelas com comentário | RF10 (parcial: sem reportar problema) |
-| Fonte ampliada, rota sem escadas, foco visível | RF11 (parcial) |
-| Cadastro e edição de pontos e eventos pela administração (pela API) | RF12 (parcial: sem tela) |
+| Missões do dia e da semana, "Registrar visita", XP, nível, medalhas e ranking (geral e entre amigos) | RF09 |
+| Avaliação de 1 a 5 estrelas com comentário; reportar problema no ponto | RF10 |
+| Ajustes: tamanho do texto, alto contraste, só rotas acessíveis, descrever imagens | RF11 |
+| Cadastro e edição de pontos, eventos e avisos pela administração (pela API) | RF12 (parcial: sem tela) |
+| Feed "No parque hoje": avisos oficiais, publicações, curtidas, comentários, denúncia | protótipo |
+| Perfil com estatísticas, conquistas, pontos visitados e amigos (seguir pessoas) | protótipo |
+| Favoritos, tour de primeiro acesso, ajuda | protótipo, heurística 10 |
+| Instalável no celular (PWA), com trilhas e últimas consultas disponíveis sem sinal | RNF06 |
 
 Numeração dos requisitos conforme a Especificação de Requisitos de Software 2026.
 
@@ -147,7 +158,8 @@ Todo erro tem o mesmo formato: `{ "momento", "status", "erro", "mensagem" }`.
 
 ## Pendências conhecidas
 
-- Telas de missões, perfil, feed e ajustes do protótipo; tela de administração.
+- Tela de administração (hoje a administração usa a API).
 - Confirmação de e-mail, recuperação de senha e login com Google (dependem de serviços externos).
-- Uso offline (PWA com mapa próprio do parque).
+- Mapa base totalmente offline: hoje ficam guardados os blocos do mapa que a pessoa já viu.
+- Notificações no celular (os avisos aparecem no Feed e na Agenda).
 - Teste com visitantes no parque e conferência em campo das coordenadas e da precisão do GPS.
