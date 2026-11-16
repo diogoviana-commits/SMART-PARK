@@ -1,12 +1,15 @@
 /**
  * Envio de e-mail: confirmação de cadastro (RF01) e recuperação de senha (RF02).
  *
- * - Publicado: envia pela API da Resend, com SMARTPARK_EMAIL_CHAVE e
- *   SMARTPARK_EMAIL_REMETENTE. Sem elas, não há envio, e o site esconde o que
- *   depende de e-mail em vez de prometer uma mensagem que não chega.
+ * - Publicado: envia por SMTP (SMARTPARK_SMTP_USUARIO e SMARTPARK_SMTP_SENHA; o
+ *   padrão é o Gmail, com senha de app) ou pela API da Resend
+ *   (SMARTPARK_EMAIL_CHAVE e SMARTPARK_EMAIL_REMETENTE, que exige domínio
+ *   próprio). Sem nenhum dos dois, não há envio, e o site esconde o que depende
+ *   de e-mail em vez de prometer uma mensagem que não chega.
  * - Desenvolvimento e testes: nada sai para a internet. A mensagem fica na
  *   caixa de saída local e, em desenvolvimento, aparece no terminal da API.
  */
+import nodemailer from 'nodemailer'
 import type { Configuracao } from './config.js'
 import { ErroHttp } from './erros.js'
 
@@ -22,7 +25,9 @@ export interface Mensagem {
 /** As últimas mensagens "enviadas" em desenvolvimento e nos testes. */
 export const caixaDeSaidaLocal: Mensagem[] = []
 
-const configurado = (config: Configuracao) => Boolean(config.email.chave && config.email.remetente)
+const porSmtp = (config: Configuracao) => Boolean(config.email.smtp && config.email.remetente)
+const pelaResend = (config: Configuracao) => Boolean(config.email.chave && config.email.remetente)
+const configurado = (config: Configuracao) => porSmtp(config) || pelaResend(config)
 
 export const emailDisponivel = (config: Configuracao) => configurado(config) || !config.exposto
 
@@ -41,7 +46,32 @@ ${paragrafos}
 const emTexto = (m: Mensagem) => `${m.paragrafos.join('\n\n')}\n\n${m.acao.rotulo}: ${m.acao.url}\n`
 
 export async function enviarEmail(config: Configuracao, mensagem: Mensagem): Promise<void> {
-  if (configurado(config)) {
+  if (porSmtp(config)) {
+    const smtp = config.email.smtp!
+    // Uma conexão por mensagem: a função serverless não mantém conexão aberta entre chamadas.
+    const transporte = nodemailer.createTransport({
+      host: smtp.servidor,
+      port: smtp.porta,
+      secure: smtp.porta === 465,
+      auth: { user: smtp.usuario, pass: smtp.senha },
+      connectionTimeout: 6_000,
+      greetingTimeout: 6_000,
+      socketTimeout: 8_000,
+    })
+    try {
+      await transporte.sendMail({
+        from: config.email.remetente,
+        to: mensagem.para,
+        subject: mensagem.assunto,
+        text: emTexto(mensagem),
+        html: emHtml(mensagem),
+      })
+    } finally {
+      transporte.close()
+    }
+    return
+  }
+  if (pelaResend(config)) {
     const resposta = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${config.email.chave}`, 'Content-Type': 'application/json' },

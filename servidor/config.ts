@@ -18,8 +18,15 @@ export interface Configuracao {
   senhaAdministrador?: string
   /** Endereço público do site, usado nos links enviados por e-mail e na volta do Google */
   urlSite: string
-  /** Envio de e-mail pela Resend; sem chave, não há envio em ambiente publicado */
-  email: { chave?: string; remetente?: string }
+  /**
+   * Envio de e-mail: por SMTP (uma conta Gmail com senha de app, por exemplo) ou
+   * pela Resend. Sem nenhum dos dois, não há envio em ambiente publicado.
+   */
+  email: {
+    chave?: string
+    remetente?: string
+    smtp?: { servidor: string; porta: number; usuario: string; senha: string }
+  }
   /** Login com Google (OAuth); sem cliente configurado, o botão não aparece */
   google: {
     clienteId?: string
@@ -65,7 +72,21 @@ export function lerConfiguracao(env: Ambiente = process.env): Configuracao {
       env.SMARTPARK_URL_SITE?.trim() ||
       (env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${env.VERCEL_PROJECT_PRODUCTION_URL}` : 'http://localhost:5173')
     ).replace(/\/+$/, ''),
-    email: { chave: env.SMARTPARK_EMAIL_CHAVE || undefined, remetente: env.SMARTPARK_EMAIL_REMETENTE || undefined },
+    email: {
+      chave: env.SMARTPARK_EMAIL_CHAVE || undefined,
+      // Com SMTP e sem remetente definido, o remetente é a própria conta que envia.
+      remetente: env.SMARTPARK_EMAIL_REMETENTE || (env.SMARTPARK_SMTP_USUARIO ? `Smart Park <${env.SMARTPARK_SMTP_USUARIO}>` : undefined),
+      smtp:
+        env.SMARTPARK_SMTP_USUARIO && env.SMARTPARK_SMTP_SENHA
+          ? {
+              servidor: env.SMARTPARK_SMTP_SERVIDOR || 'smtp.gmail.com',
+              porta: Number(env.SMARTPARK_SMTP_PORTA ?? 465),
+              usuario: env.SMARTPARK_SMTP_USUARIO,
+              // O Google mostra a senha de app em grupos de 4 letras; os espaços não fazem parte dela.
+              senha: env.SMARTPARK_SMTP_SENHA.replace(/\s+/g, ''),
+            }
+          : undefined,
+    },
     google: { clienteId: env.SMARTPARK_GOOGLE_ID || undefined, segredo: env.SMARTPARK_GOOGLE_SEGREDO || undefined },
   }
 }

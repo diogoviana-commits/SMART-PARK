@@ -16,6 +16,7 @@
     "verificar": "node scripts/verificar.mjs",
     "migrar": "tsx scripts/migrar.ts",
     "backup": "tsx scripts/backup.ts",
+    "email:testar": "tsx scripts/testar-email.ts",
     "backup:agendar": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agendar-backup.ps1",
     "prepare": "node scripts/instalar-ganchos.mjs"
   },
@@ -29,6 +30,7 @@
     "hono": "^4.13.18",
     "jose": "^6.2.17",
     "leaflet": "^1.9.4",
+    "nodemailer": "^10.6.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-leaflet": "^4.2.1",
@@ -39,6 +41,7 @@
     "@hono/node-server": "^2.1.7",
     "@types/leaflet": "^1.9.22",
     "@types/node": "^26.6.6",
+    "@types/nodemailer": "^8.0.2",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.7.0",

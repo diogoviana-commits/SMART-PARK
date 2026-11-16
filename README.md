@@ -81,8 +81,9 @@ emergência, `git push --no-verify` pula a conferência.
    `DATABASE_URL`, `SMARTPARK_JWT_SECRET` e, se quiser criar a administração, `SMARTPARK_ADMIN_SENHA`.
    Dois recursos dependem de contas em serviços externos e só aparecem no site quando as
    variáveis deles existem:
-   - **E-mail** (confirmação de cadastro e recuperação de senha): conta na [Resend](https://resend.com),
-     com `SMARTPARK_EMAIL_CHAVE` e `SMARTPARK_EMAIL_REMETENTE`.
+   - **E-mail** (confirmação de cadastro e recuperação de senha): uma conta Gmail do projeto com
+     senha de app, em `SMARTPARK_SMTP_USUARIO` e `SMARTPARK_SMTP_SENHA`; ou, com domínio próprio, a
+     [Resend](https://resend.com), com `SMARTPARK_EMAIL_CHAVE` e `SMARTPARK_EMAIL_REMETENTE`.
    - **Login com Google**: cliente OAuth no Google Cloud, com `SMARTPARK_GOOGLE_ID` e
      `SMARTPARK_GOOGLE_SEGREDO`, e a URI de redirecionamento `<site>/api/usuarios/google/retorno`.
 
@@ -236,7 +237,7 @@ Todo erro tem o mesmo formato: `{ "momento", "status", "erro", "mensagem" }`.
 ## Pendências conhecidas
 
 - E-mail e login com Google estão implementados, mas só funcionam no site publicado depois de criadas
-  as contas na Resend e no Google Cloud (veja "Publicar").
+  as variáveis de e-mail e o cliente OAuth no Google Cloud (veja "Publicar").
 - Login com Apple (a Especificação cita; o grupo decidiu ficar só com o Google).
 - Fotos dos pontos: o envio funciona, mas as fotos em si ainda precisam ser tiradas no parque.
 - Mapa base totalmente offline: hoje ficam guardados os blocos do mapa que a pessoa já viu.
