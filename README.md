@@ -137,6 +137,24 @@ administração do parque as atualiza pela API.
 | GET | `/api/missoes` (`periodicidade`) | aberto (com progresso, se logado) |
 | GET | `/api/missoes/pontos` | conta |
 | POST | `/api/visitas` (`poiId`, `latitude`, `longitude`) | conta |
+| GET | `/api/favoritos` | conta |
+| POST/DELETE | `/api/pois/{id}/favorito` | conta |
+| POST | `/api/pois/{id}/problemas` (`tipo`, `descricao`) | conta |
+| GET, PATCH | `/api/problemas` (`situacao`), `/api/problemas/{id}` | administração |
+| GET | `/api/avisos` | aberto (`todos=true`: administração) |
+| POST/PUT/DELETE | `/api/avisos`, `/api/avisos/{id}` | administração |
+| GET | `/api/feed` (`aba`) | aberto (`aba=seguindo`: conta) |
+| POST | `/api/publicacoes` | conta |
+| DELETE | `/api/publicacoes/{id}` | dono ou administração |
+| POST/DELETE | `/api/publicacoes/{id}/curtida` | conta |
+| GET | `/api/publicacoes/{id}/comentarios` | aberto |
+| POST | `/api/publicacoes/{id}/comentarios`, `/api/publicacoes/{id}/denuncia` | conta |
+| GET, PATCH | `/api/publicacoes/denunciadas`, `/api/publicacoes/{id}` | administração |
+| GET/PATCH | `/api/perfil` (`nome`, `perfilPublico`) | conta |
+| GET | `/api/perfil/seguindo` | conta |
+| GET | `/api/perfis/{id}` | aberto (só perfis públicos) |
+| POST/DELETE | `/api/perfis/{id}/seguir` | conta |
+| GET | `/api/ranking` (`escopo`) | aberto (`escopo=amigos`: conta) |
 
 Todo erro tem o mesmo formato: `{ "momento", "status", "erro", "mensagem" }`.
 
