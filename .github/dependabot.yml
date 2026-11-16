@@ -1,6 +1,7 @@
-# Abre pull requests semanais atualizando as dependências. Cada PR passa pelo
-# fluxo de Testes antes de ser juntado. As atualizações pequenas vêm agrupadas
-# em um PR só, para não encher a lista.
+# Abre pull requests semanais atualizando as dependências. Antes de juntar um
+# deles, baixe o ramo e rode `npm run verificar`: não há mais testes automáticos
+# no GitHub. As atualizações pequenas vêm agrupadas em um PR só, para não encher
+# a lista.
 
 version: 2
 updates:
@@ -11,8 +12,3 @@ updates:
     groups:
       menores:
         update-types: [minor, patch]
-
-  - package-ecosystem: github-actions
-    directory: /
-    schedule:
-      interval: weekly

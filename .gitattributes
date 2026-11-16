@@ -1,0 +1,2 @@
+# Os ganchos do Git rodam pelo sh: precisam de fim de linha LF em qualquer sistema.
+.githooks/* text eol=lf

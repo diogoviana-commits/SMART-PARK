@@ -1,0 +1,4 @@
+#!/bin/sh
+# Antes de enviar: tipos, testes e compilação. Falhou, o push não sai.
+# Pular numa emergência: git push --no-verify
+exec node scripts/verificar.mjs

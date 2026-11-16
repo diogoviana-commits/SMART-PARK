@@ -4,7 +4,7 @@
  *   DATABASE_URL="postgresql://..." npm run migrar
  *
  * Use a conexão sem pooling do Neon (o endereço sem "-pooler"). Faça um backup
- * antes: o fluxo "Backup do banco" do GitHub pode ser disparado na mão.
+ * antes: `npm run backup`.
  *
  * Com SMARTPARK_ADMIN_SENHA definida, cria a conta admin@smartpark.uscs se ela
  * ainda não existir.

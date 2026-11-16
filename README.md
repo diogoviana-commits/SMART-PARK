@@ -24,7 +24,7 @@ Um projeto só na Vercel: o site e a API ficam no mesmo endereço.
 | API | TypeScript, Hono, como função da Vercel (região São Paulo) |
 | Banco | PostgreSQL no Neon, acessado com Drizzle ORM |
 | Rota a pé | Calculada no próprio aparelho (Dijkstra sobre os caminhos do OpenStreetMap) |
-| Testes | Vitest + PGlite (PostgreSQL embutido), no GitHub Actions a cada push |
+| Testes | Vitest + PGlite (PostgreSQL embutido), rodados neste computador antes de cada `git push` |
 | App instalável | PWA (vite-plugin-pwa / Workbox) |
 
 ```
@@ -64,7 +64,13 @@ com o parque carregado. Conta de administração local: `admin@smartpark.uscs` /
 npm test          # testes automatizados
 npm run tipos     # conferência de tipos (TypeScript)
 npm run build     # gera o site em dist/
+npm run verificar # os três acima, em sequência
 ```
+
+O `npm install` liga um gancho do Git (`.githooks/pre-push`) que roda `npm run verificar` antes de
+todo `git push` e recusa o envio se algo falhar. Ele substitui os testes no GitHub Actions: a Vercel
+publica direto da `main`, então a conferência precisa acontecer antes de o commit sair daqui. Numa
+emergência, `git push --no-verify` pula a conferência.
 
 > No Windows, rode os testes com o caminho do projeto começando por `C:` maiúsculo (o PowerShell
 > faz isso). Com `c:` minúsculo, o Vitest carrega duas cópias de si mesmo e falha antes de começar.
@@ -73,8 +79,30 @@ npm run build     # gera o site em dist/
 
 1. Variáveis na Vercel (Settings → Environment Variables), descritas em `.env.example`:
    `DATABASE_URL`, `SMARTPARK_JWT_SECRET` e, se quiser criar a administração, `SMARTPARK_ADMIN_SENHA`.
-2. Banco: `DATABASE_URL="..." npm run migrar`. Faça antes um backup pelo fluxo "Backup do banco".
+2. Banco: `DATABASE_URL="..." npm run migrar`. Faça antes um backup: `npm run backup`.
 3. O push na `main` publica.
+
+### Backup do banco
+
+```bash
+npm run backup            # grava um backup agora
+npm run backup:agendar    # agenda um backup por semana (Agendador de Tarefas do Windows)
+```
+
+O backup guarda as linhas de todas as tabelas num arquivo `.json.gz` em `Backups/SmartPark`, na pasta
+do usuário (ou na pasta de `SMARTPARK_PASTA_BACKUP`), e mantém os 12 mais recentes. Fica fora do
+repositório porque contém os e-mails dos visitantes. O endereço do banco vem de `DATABASE_URL` ou,
+sem ela, do CLI do Neon (`npx neonctl auth`, uma vez); nada é gravado em arquivo. Cada execução deixa
+uma linha em `backup.log`, na mesma pasta.
+
+Para restaurar num banco novo, já migrado até a mesma versão:
+
+```bash
+DATABASE_URL="..." npm run migrar
+DATABASE_URL="..." npm run backup -- --restaurar CAMINHO.json.gz --confirmar
+```
+
+Sem `--confirmar`, o comando só mostra o que faria. A restauração substitui o conteúdo do destino.
 
 ## O que o sistema faz
 
