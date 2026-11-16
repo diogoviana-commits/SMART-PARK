@@ -16,6 +16,24 @@ export interface Configuracao {
   maxTentativasLogin: number
   bloqueioMin: number
   senhaAdministrador?: string
+  /** Endereço público do site, usado nos links enviados por e-mail e na volta do Google */
+  urlSite: string
+  /** Envio de e-mail pela Resend; sem chave, não há envio em ambiente publicado */
+  email: { chave?: string; remetente?: string }
+  /** Login com Google (OAuth); sem cliente configurado, o botão não aparece */
+  google: {
+    clienteId?: string
+    segredo?: string
+    /** Troca o código devolvido pelo Google pelos dados da pessoa. Substituível nos testes. */
+    trocarCodigo?: (codigo: string, urlDeRetorno: string) => Promise<PessoaDoGoogle>
+  }
+}
+
+export interface PessoaDoGoogle {
+  id: string
+  email: string
+  nome: string
+  emailVerificado: boolean
 }
 
 export const SEGREDO_DEV = 'segredo-de-desenvolvimento-do-smart-park-troque-em-producao-1234567890'
@@ -41,5 +59,13 @@ export function lerConfiguracao(env: Ambiente = process.env): Configuracao {
     maxTentativasLogin: Number(env.SMARTPARK_LOGIN_MAX_TENTATIVAS ?? 5),
     bloqueioMin: Number(env.SMARTPARK_LOGIN_BLOQUEIO_MINUTOS ?? 15),
     senhaAdministrador: env.SMARTPARK_ADMIN_SENHA || undefined,
+    // O endereço nunca vem do cabeçalho Host da requisição: quem o forjasse
+    // receberia, no próprio site, o link de redefinir a senha de outra pessoa.
+    urlSite: (
+      env.SMARTPARK_URL_SITE?.trim() ||
+      (env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${env.VERCEL_PROJECT_PRODUCTION_URL}` : 'http://localhost:5173')
+    ).replace(/\/+$/, ''),
+    email: { chave: env.SMARTPARK_EMAIL_CHAVE || undefined, remetente: env.SMARTPARK_EMAIL_REMETENTE || undefined },
+    google: { clienteId: env.SMARTPARK_GOOGLE_ID || undefined, segredo: env.SMARTPARK_GOOGLE_SEGREDO || undefined },
   }
 }

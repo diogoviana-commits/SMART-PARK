@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
-import TelaEntrada from './components/TelaEntrada.jsx'
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react'
+import TelaEntrada, { RedefinirSenha } from './components/TelaEntrada.jsx'
 import BarraInferior from './components/BarraInferior.jsx'
 import PrimeiroAcesso from './components/PrimeiroAcesso.jsx'
 import TelaMapa from './telas/TelaMapa.jsx'
@@ -8,13 +8,25 @@ import TelaMissoes from './telas/TelaMissoes.jsx'
 import TelaFeed from './telas/TelaFeed.jsx'
 import TelaPerfil from './telas/TelaPerfil.jsx'
 import TelaAjustes from './telas/TelaAjustes.jsx'
-import { quandoSessaoExpirar, sair, sessaoAtual } from './api.js'
+import { confirmarEmail, quandoSessaoExpirar, sair, sessaoAtual } from './api.js'
 import { lerPreferencias, gravarPreferencias, aplicarPreferencias } from './preferencias.js'
 
-/** Lê a tela da URL: #/mapa, #/agenda, #/missoes, #/feed, #/perfil, #/perfil/12, #/ajustes */
+// A administração é uma tela grande que só a equipe do parque abre: fica fora do
+// pacote que todo visitante baixa.
+const TelaAdmin = lazy(() => import('./telas/TelaAdmin.jsx'))
+
+/** Lê a tela da URL: #/mapa, #/agenda, #/missoes, #/feed, #/perfil, #/perfil/12, #/ajustes, #/admin */
 function rotaAtual() {
   const [, tela = 'mapa', parametro] = window.location.hash.replace(/^#/, '').split('/')
-  return { tela: tela || 'mapa', parametro: parametro ? Number(parametro) : null }
+  return { tela: tela || 'mapa', parametro: parametro || null }
+}
+
+/** Avisos da volta do login com Google, quando ele não se completa. */
+const MOTIVOS_DE_ENTRADA = {
+  'google-cancelado': 'O login com Google não foi concluído. Tente de novo.',
+  'google-falhou': 'Não foi possível confirmar sua conta no Google. Tente de novo ou entre com e-mail e senha.',
+  'google-sem-email': 'O Google informou que este e-mail ainda não foi verificado. Verifique-o no Google ou entre com e-mail e senha.',
+  'conta-bloqueada': 'Esta conta foi bloqueada pela administração do parque.',
 }
 
 /**
@@ -33,6 +45,9 @@ export default function App() {
   const [aviso, setAviso] = useState(null)
   const [preferencias, setPreferencias] = useState(lerPreferencias)
   const [focarPoi, setFocarPoi] = useState(null)
+  const [redefinir, setRedefinir] = useState(null)
+  const [recado, setRecado] = useState(null)
+  const passagem = useRef(null)
 
   useEffect(() => {
     const aoMudar = () => setRota(rotaAtual())
@@ -44,6 +59,39 @@ export default function App() {
     aplicarPreferencias(preferencias)
     gravarPreferencias(preferencias)
   }, [preferencias])
+
+  // Links recebidos por e-mail e a volta do Google chegam como telas de passagem:
+  // fazem o que têm de fazer e saem do endereço, para o código do link não ficar
+  // no histórico do navegador.
+  useEffect(() => {
+    if (!['redefinir', 'confirmar', 'entrar'].includes(rota.tela)) return
+    const { tela, parametro } = rota
+    // Em desenvolvimento o React roda o efeito duas vezes: o link só é usado uma.
+    if (passagem.current === `${tela}/${parametro}`) return
+    passagem.current = `${tela}/${parametro}`
+    window.history.replaceState(null, '', '#/mapa')
+    setRota({ tela: 'mapa', parametro: null })
+    if (tela === 'redefinir' && parametro) setRedefinir(parametro)
+    if (tela === 'entrar') {
+      setAviso(MOTIVOS_DE_ENTRADA[parametro] ?? null)
+      setEntrando(true)
+    }
+    if (tela === 'confirmar' && parametro) {
+      confirmarEmail(parametro)
+        .then(() => {
+          setRecado({ tipo: 'sucesso', texto: 'E-mail confirmado. Obrigado!' })
+          setSessao((s) => (s ? { ...s, usuario: { ...s.usuario, emailConfirmado: true } } : s))
+        })
+        .catch((e) => setRecado({ tipo: 'erro', texto: e.message }))
+    }
+  }, [rota])
+
+  // O recado some sozinho; quem usa leitor de tela já o ouviu (role="status").
+  useEffect(() => {
+    if (!recado) return
+    const relogio = setTimeout(() => setRecado(null), 8_000)
+    return () => clearTimeout(relogio)
+  }, [recado])
 
   // Sessão que já estava aberta neste navegador (cookie HttpOnly).
   useEffect(() => {
@@ -107,7 +155,12 @@ export default function App() {
         {rota.tela === 'agenda' && <TelaAgenda {...comum} />}
         {rota.tela === 'missoes' && <TelaMissoes {...comum} />}
         {rota.tela === 'feed' && <TelaFeed {...comum} />}
-        {rota.tela === 'perfil' && <TelaPerfil {...comum} usuarioId={rota.parametro} />}
+        {rota.tela === 'perfil' && <TelaPerfil {...comum} usuarioId={rota.parametro ? Number(rota.parametro) : null} />}
+        {rota.tela === 'admin' && (
+          <Suspense fallback={<p className="carregando" role="status">Carregando…</p>}>
+            <TelaAdmin {...comum} />
+          </Suspense>
+        )}
         {rota.tela === 'ajustes' && (
           <TelaAjustes
             {...comum}
@@ -125,9 +178,31 @@ export default function App() {
 
       <BarraInferior tela={rota.tela} irPara={irPara} />
 
+      {recado && (
+        <div className={`recado recado-${recado.tipo}`} role={recado.tipo === 'erro' ? 'alert' : 'status'}>
+          <span>{recado.texto}</span>
+          <button type="button" aria-label="Fechar aviso" onClick={() => setRecado(null)}>
+            ×
+          </button>
+        </div>
+      )}
+
       {!preferencias.tourVisto && <PrimeiroAcesso aoTerminar={() => mudarPreferencia('tourVisto', true)} />}
 
-      {entrando && (
+      {redefinir && (
+        <RedefinirSenha
+          codigo={redefinir}
+          aoFechar={() => setRedefinir(null)}
+          aoConcluir={() => {
+            setRedefinir(null)
+            setSessao(null)
+            setAviso('Senha alterada. Entre com a senha nova.')
+            setEntrando(true)
+          }}
+        />
+      )}
+
+      {entrando && !redefinir && (
         <TelaEntrada
           aviso={aviso}
           aoFechar={() => {

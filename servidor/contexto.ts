@@ -42,8 +42,8 @@ export const protecaoCsrf: MiddlewareHandler<Ambiente> = async (c, next) => {
 }
 
 /**
- * Identifica quem está logado. Token ausente, inválido, vencido ou de uma sessão
- * encerrada (versão da conta mudou) não é erro aqui: a requisição segue como
+ * Identifica quem está logado. Token ausente, inválido, vencido, de uma sessão
+ * encerrada (versão da conta mudou) ou de conta bloqueada não é erro aqui: a requisição segue como
  * anônima, e cada rota decide se exige login.
  */
 export const autenticar: MiddlewareHandler<Ambiente> = async (c, next) => {
@@ -53,7 +53,7 @@ export const autenticar: MiddlewareHandler<Ambiente> = async (c, next) => {
   const dados = token ? await lerToken(config, token) : null
   if (dados) {
     const [usuario] = await c.get('banco').select().from(usuarios).where(eq(usuarios.id, dados.uid))
-    if (usuario && usuario.email === dados.email && usuario.versaoToken === dados.versao) {
+    if (usuario && !usuario.bloqueado && usuario.email === dados.email && usuario.versaoToken === dados.versao) {
       c.set('usuario', usuario)
     }
   }

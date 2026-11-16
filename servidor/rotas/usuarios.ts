@@ -20,6 +20,7 @@ import {
   avaliacoes,
   avisos,
   checkins,
+  codigos,
   comentarios,
   conclusoes,
   curtidas,
@@ -29,6 +30,7 @@ import {
   progressosLegados,
   publicacoes,
   seguidores,
+  sugestoes,
   tentativasLogin,
   usuarios,
 } from '../db/esquema.js'
@@ -36,6 +38,7 @@ import { ErroHttp } from '../erros.js'
 import { conferirSenha, gerarHash, hashParaComparacaoFalsa, validarSenhaNova } from '../seguranca/senha.js'
 import { cookieApagado, cookieDeSessao, emitirToken } from '../seguranca/sessao.js'
 import { noParque, paraIso } from '../tempo.js'
+import { enviarConfirmacao } from './conta.js'
 
 export const respostaUsuario = (u: UsuarioLogado) => ({
   id: u.id,
@@ -44,6 +47,8 @@ export const respostaUsuario = (u: UsuarioLogado) => ({
   perfil: u.perfil,
   dataCadastro: paraIso(u.dataCadastro),
   ultimoAcesso: paraIso(u.ultimoAcesso),
+  emailConfirmado: u.emailConfirmado !== null,
+  bloqueado: u.bloqueado,
 })
 
 const normalizarEmail = (email: string) => email.trim().toLowerCase()
@@ -76,6 +81,8 @@ async function cadastrar(c: Ctx, perfil: 'VISITANTE' | 'ADMINISTRADOR') {
     .insert(usuarios)
     .values({ nome: dados.nome, email, senhaHash: await gerarHash(dados.senha), perfil, dataCadastro: noParque() })
     .returning()
+  // Conta criada pela administração não precisa de confirmação; a do visitante recebe o link.
+  if (perfil === 'VISITANTE') await enviarConfirmacao(c, criado)
   c.header('Location', `/api/usuarios/${criado.id}`)
   return c.json(respostaUsuario(criado), 201)
 }
@@ -140,6 +147,8 @@ export const rotasUsuarios = new Hono<Ambiente>()
       await registrarFalha(banco, email, c)
       throw new ErroHttp(401, 'E-mail ou senha incorretos.')
     }
+    // Só depois da senha certa: antes disso, a resposta diria que a conta existe.
+    if (usuario.bloqueado) throw new ErroHttp(403, 'Esta conta foi bloqueada pela administração do parque.')
 
     await banco.delete(tentativasLogin).where(eq(tentativasLogin.email, email))
     const [atualizado] = await banco
@@ -194,6 +203,29 @@ export const rotasUsuarios = new Hono<Ambiente>()
     return c.json(respostaUsuario(usuario))
   })
 
+  /**
+   * Administração de contas (UC10): bloquear, desbloquear e mudar o perfil.
+   * Bloquear encerra as sessões da conta na hora. Ninguém altera a própria conta
+   * por aqui, o que também impede o parque de ficar sem administração.
+   */
+  .patch('/:id{[0-9]+}', async (c) => {
+    const admin = exigirAdministrador(c)
+    const id = idDaRota(c)
+    const dados = z
+      .object({ bloqueado: z.boolean().optional(), perfil: z.enum(['VISITANTE', 'ADMINISTRADOR']).optional() })
+      .refine((d) => d.bloqueado !== undefined || d.perfil !== undefined, { message: 'Informe o que mudar: bloqueado ou perfil.' })
+      .parse(await corpoJson(c))
+    if (id === admin.id) throw new ErroHttp(400, 'Você não pode bloquear nem mudar o perfil da sua própria conta.')
+    const [atualizado] = await c
+      .get('banco')
+      .update(usuarios)
+      .set({ ...dados, ...(dados.bloqueado ? { versaoToken: sql`${usuarios.versaoToken} + 1` } : {}) })
+      .where(eq(usuarios.id, id))
+      .returning()
+    if (!atualizado) throw new ErroHttp(404, `Usuário ${id} não encontrado.`)
+    return c.json(respostaUsuario(atualizado))
+  })
+
   /** Remove a conta e tudo o que é dela. Cada pessoa só remove a própria; administradores, qualquer uma. */
   .delete('/:id{[0-9]+}', async (c) => {
     const logado = exigirLogin(c)
@@ -208,6 +240,8 @@ export const rotasUsuarios = new Hono<Ambiente>()
     await banco.delete(progressosLegados).where(eq(progressosLegados.usuarioId, id))
     await banco.delete(favoritos).where(eq(favoritos.usuarioId, id))
     await banco.delete(problemas).where(eq(problemas.usuarioId, id))
+    await banco.delete(sugestoes).where(eq(sugestoes.usuarioId, id))
+    await banco.delete(codigos).where(eq(codigos.usuarioId, id))
     await banco.delete(seguidores).where(or(eq(seguidores.seguidorId, id), eq(seguidores.seguidoId, id)))
     await banco.delete(curtidas).where(eq(curtidas.usuarioId, id))
     await banco.delete(comentarios).where(eq(comentarios.usuarioId, id))

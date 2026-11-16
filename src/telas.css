@@ -1143,3 +1143,302 @@ body.alto-contraste .dica {
     border-radius: var(--raio-g) var(--raio-g) 0 0;
   }
 }
+
+/* ------------------------------------------- entrada: Google e recuperar senha --- */
+
+.botao-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 10px 16px;
+  border: 1px solid var(--borda-campo);
+  border-radius: var(--raio);
+  background: #fff;
+  color: var(--tinta);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.botao-google:hover {
+  border-color: var(--mata-clara);
+}
+
+.divisor-ou {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: var(--tinta-fraca);
+  font-size: 0.8rem;
+}
+
+.divisor-ou::before,
+.divisor-ou::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--linha);
+}
+
+.link-entrada {
+  align-self: center;
+  min-height: 44px;
+  padding: 0 8px;
+  border: none;
+  background: none;
+  color: var(--mata-clara);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ------------------------------------------------------------ recado do app --- */
+
+.recado {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(var(--nav) + 12px);
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 12px 8px 12px 16px;
+  border-radius: var(--raio);
+  background: var(--mata);
+  color: #fff;
+  box-shadow: var(--sombra-flutuante);
+  font-size: 0.92rem;
+}
+
+.recado span {
+  flex: 1;
+}
+
+.recado-erro {
+  background: #7d351d;
+}
+
+.recado button {
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+/* ------------------------------------------------------------- foto do ponto --- */
+
+.card-foto {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: var(--areia);
+}
+
+.selo-evento {
+  background: var(--ambar-texto);
+  color: #fff;
+}
+
+/* ------------------------------------------------------------- administração --- */
+
+.form-admin,
+.form-sugestao {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-admin {
+  padding: 16px;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio-g);
+  background: #fff;
+}
+
+.form-admin h3 {
+  margin: 0;
+  font-family: var(--fonte-titulo);
+  font-size: 1.1rem;
+}
+
+.form-admin .campo,
+.form-sugestao .campo {
+  margin: 0;
+}
+
+.form-admin select,
+.form-admin input[type='time'],
+.form-admin input[type='datetime-local'],
+.campo-busca-admin {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--borda-campo);
+  border-radius: var(--raio);
+  background: #fff;
+  color: var(--tinta);
+  font: inherit;
+}
+
+.campo-busca-admin {
+  flex: 1;
+  min-width: 0;
+}
+
+.form-admin-dupla {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 420px) {
+  .form-admin-dupla {
+    grid-template-columns: 1fr;
+  }
+}
+
+.foto-admin {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--linha);
+}
+
+.foto-admin img {
+  width: 100%;
+  max-width: 360px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: var(--raio);
+  background: var(--areia);
+}
+
+.botao-arquivo {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+/* O campo de arquivo fica dentro do rótulo, que é o botão visível e focável. */
+.botao-arquivo input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.botao-arquivo:focus-within {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.cartao-admin {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio-g);
+  background: #fff;
+}
+
+.cartao-admin p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.cartao-admin .dica {
+  margin: 0;
+}
+
+.cartao-admin .cartao-acoes {
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.lista-simples .link-linha {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  width: 100%;
+  padding: 8px 0;
+}
+
+.lista-simples .link-linha .dica {
+  margin: 0;
+  font-weight: 400;
+}
+
+.ranking-admin {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 14px;
+  list-style: none;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio-g);
+  background: #fff;
+}
+
+.ranking-admin li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  font-size: 0.9rem;
+}
+
+.ranking-admin .progresso {
+  grid-column: 1 / -1;
+}
+
+.ranking-admin-nome {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Visitas por dia: uma coluna por dia; o valor exato está no título e no texto para leitor de tela. */
+.colunas-dia {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 120px;
+  margin: 0;
+  padding: 12px 12px 0;
+  list-style: none;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio-g);
+  background: #fff;
+}
+
+.colunas-dia li {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+  min-width: 0;
+  border-bottom: 1px solid var(--linha);
+}
+
+.colunas-dia li > span:first-child {
+  width: 100%;
+  min-height: 0;
+  border-radius: 3px 3px 0 0;
+  background: var(--mata-clara);
+}
+
+.estatisticas dd {
+  margin: 0;
+}

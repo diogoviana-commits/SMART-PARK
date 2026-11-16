@@ -60,7 +60,7 @@ describe('backup do banco', () => {
 
     const antigo = await bancoMigrado(6)
     await antigo.pg.exec(`INSERT INTO tb_usuario (nome, email, senha_hash, tipo_perfil, data_cadastro) VALUES ('Fica', 'fica@exemplo.com', 'x', 'VISITANTE', now())`)
-    await expect(restaurarBackup(antigo.pg, backup)).rejects.toThrow(/V7.*V6/)
+    await expect(restaurarBackup(antigo.pg, backup)).rejects.toThrow(/V\d+.*V6/)
     const { rows } = await antigo.pg.query(`SELECT count(*)::int AS n FROM tb_usuario`)
     expect((rows[0] as { n: number }).n).toBe(1)
   })

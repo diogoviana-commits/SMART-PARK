@@ -6,7 +6,7 @@ import Conta from '../components/Conta.jsx'
 import Navegacao from '../components/Navegacao.jsx'
 import { IconeCategoria, Logotipo } from '../icones.jsx'
 import { distancia, trechoRestante } from '../geo.js'
-import { SessaoExpirada, listarCategorias, listarPois } from '../api.js'
+import { SessaoExpirada, listarCategorias, listarEventos, listarPois } from '../api.js'
 import { carregarRede, tracarRotaAte } from '../rota.js'
 
 /** Afastado da linha mais que isto, o visitante saiu do caminho: a rota é refeita. */
@@ -15,6 +15,9 @@ const DESVIO_PARA_RECALCULAR_M = 35
 const INTERVALO_RECALCULO_MS = 20_000
 /** A esta distância do destino, considera que a pessoa chegou. */
 const RAIO_DE_CHEGADA_M = 20
+
+const semAcento = (texto) => texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+const DIA_E_HORA = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 
 function Lupa() {
   return (
@@ -27,9 +30,10 @@ function Lupa() {
 }
 
 /** O mapa do parque (RF03–RF07), com busca, filtros, card do ponto e rota a pé. */
-export default function TelaMapa({ sessao, aoSair, aoPedirLogin, preferencias, focarPoi, aoFocar }) {
+export default function TelaMapa({ sessao, aoSair, aoPedirLogin, preferencias, focarPoi, aoFocar, irPara }) {
   const [categorias, setCategorias] = useState([])
   const [pois, setPois] = useState([])
+  const [eventos, setEventos] = useState(null)
 
   const [busca, setBusca] = useState('')
   const [buscaAplicada, setBuscaAplicada] = useState('')
@@ -66,6 +70,18 @@ export default function TelaMapa({ sessao, aoSair, aoPedirLogin, preferencias, f
       })
       .catch(mostrarErro)
   }, [buscaAplicada, categoriaAtiva, somenteAcessiveis, tentativa, mostrarErro])
+
+  // A busca também procura na agenda: os eventos são baixados na primeira busca.
+  useEffect(() => {
+    if (!buscaAplicada.trim() || eventos) return
+    listarEventos().then(setEventos).catch(() => {})
+  }, [buscaAplicada, eventos])
+
+  const eventosDaBusca = useMemo(() => {
+    const termo = semAcento(buscaAplicada.trim())
+    if (!termo || !eventos) return []
+    return eventos.filter((e) => semAcento(`${e.nome} ${e.descricao ?? ''} ${e.local ?? ''}`).includes(termo)).slice(0, 5)
+  }, [buscaAplicada, eventos])
 
   // Localizacao do visitante em tempo real (RF04)
   useEffect(() => {
@@ -197,6 +213,23 @@ export default function TelaMapa({ sessao, aoSair, aoPedirLogin, preferencias, f
     setSeguindo(false) // o mapa vai até o ponto escolhido, em vez de ficar preso no visitante
   }, [])
 
+  /**
+   * Evento achado na busca: com local no parque, mostra o ponto no mapa (a busca
+   * e os filtros saem, senão o ponto ficaria escondido por eles); sem local, abre a agenda.
+   */
+  const abrirEvento = useCallback(
+    (evento) => {
+      if (!evento.poiId) return irPara('agenda')
+      setBusca('')
+      setBuscaAplicada('')
+      setCategoriaAtiva(null)
+      setSomenteAcessiveis(false)
+      setPoiSelecionadoId(evento.poiId)
+      setSeguindo(false)
+    },
+    [irPara],
+  )
+
   const temFiltro = Boolean(buscaAplicada || categoriaAtiva || somenteAcessiveis)
 
   return (
@@ -281,8 +314,8 @@ export default function TelaMapa({ sessao, aoSair, aoPedirLogin, preferencias, f
               <Lupa />
               <input
                 type="search"
-                aria-label="Buscar ponto de interesse"
-                placeholder="Banheiro, quadra, lanchonete…"
+                aria-label="Buscar ponto de interesse ou evento"
+                placeholder="Buscar banheiro, quadra, evento…"
                 value={busca}
                 maxLength={100}
                 onChange={(evento) => setBusca(evento.target.value)}
@@ -346,6 +379,41 @@ export default function TelaMapa({ sessao, aoSair, aoPedirLogin, preferencias, f
               </>
             )}
 
+            {eventosDaBusca.length > 0 && (
+              <>
+                <div className="secao">
+                  <h2>Eventos na agenda</h2>
+                  <span>
+                    {eventosDaBusca.length} {eventosDaBusca.length === 1 ? 'evento' : 'eventos'}
+                  </span>
+                </div>
+                <ul className="lista">
+                  {eventosDaBusca.map((e) => (
+                    <li key={e.id}>
+                      <button
+                        type="button"
+                        className="item"
+                        onClick={() => abrirEvento(e)}
+                      >
+                        <span className="selo selo-evento" aria-hidden="true">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M7 2v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7Zm-2 8h14v10H5V10Z" />
+                          </svg>
+                        </span>
+                        <span className="item-texto">
+                          <span className="item-nome">{e.nome}</span>
+                          <span className="item-meta">
+                            {DIA_E_HORA.format(new Date(e.dataHoraInicio))}
+                            {e.local ? ` · ${e.local}` : ''}
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+
             <div className="secao">
               <h2>Pontos do parque</h2>
               <span>
@@ -389,7 +457,9 @@ export default function TelaMapa({ sessao, aoSair, aoPedirLogin, preferencias, f
             ) : (
               <p className="vazio">
                 {temFiltro
-                  ? 'Nenhum ponto com esses filtros. Tente limpar a busca ou escolher outra categoria.'
+                  ? eventosDaBusca.length > 0
+                    ? 'Nenhum ponto com esse nome; veja os eventos encontrados acima.'
+                    : 'Nenhum ponto com esses filtros. Tente limpar a busca ou escolher outra categoria.'
                   : 'Nenhum ponto cadastrado ainda.'}
               </p>
             )}

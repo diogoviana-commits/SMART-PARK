@@ -207,3 +207,69 @@ export const seguir = (id, sim) => pedir(`/api/perfis/${id}/seguir`, { metodo: s
 export const quemSigo = () => pedir('/api/perfil/seguindo')
 export const ranking = (escopo = 'geral') => pedir('/api/ranking', { parametros: { escopo } })
 export const apagarConta = (id) => pedir(`/api/usuarios/${id}`, { metodo: 'DELETE' })
+
+// ------------------------------------------- e-mail, senha e login com Google ---
+
+/** O que depende de serviço externo configurado: { email, google }. */
+let recursosDoSite = null
+export function recursos() {
+  recursosDoSite ??= pedir('/api/recursos').catch(() => {
+    recursosDoSite = null
+    return { email: false, google: false }
+  })
+  return recursosDoSite
+}
+
+/** RF02: pede o link de redefinição. A resposta é a mesma, exista a conta ou não. */
+export const esqueciSenha = (email) => pedir('/api/usuarios/senha/esqueci', { metodo: 'POST', corpo: { email } })
+export const redefinirSenha = (codigo, senha) =>
+  pedir('/api/usuarios/senha/redefinir', { metodo: 'POST', corpo: { codigo, senha }, avisarSeExpirar: false })
+/** RF01: confirma o e-mail com o código do link recebido. */
+export const confirmarEmail = (codigo) =>
+  pedir('/api/usuarios/confirmar', { metodo: 'POST', corpo: { codigo }, avisarSeExpirar: false })
+export const reenviarConfirmacao = () => pedir('/api/usuarios/confirmar/reenviar', { metodo: 'POST' })
+/** Endereço que inicia o login com Google (navegação da página inteira, não fetch). */
+export const ENTRAR_COM_GOOGLE = '/api/usuarios/google/iniciar'
+
+/** RF10: sugestão sobre o parque ou o app, lida pela administração. */
+export const enviarSugestao = (texto) => pedir('/api/sugestoes', { metodo: 'POST', corpo: { texto } })
+
+// ------------------------------------------------------------ administração ---
+
+const enviar = (metodo) => (caminho, corpo) => pedir(caminho, { metodo, corpo })
+const criar = enviar('POST')
+const trocar = enviar('PUT')
+const ajustar = enviar('PATCH')
+const remover = (caminho) => pedir(caminho, { metodo: 'DELETE' })
+
+/** RF12, UC07–UC10: tudo o que só a administração do parque faz. */
+export const administracao = {
+  relatorio: (dias) => pedir('/api/relatorios', { parametros: { dias } }),
+
+  criarPonto: (dados) => criar('/api/pois', dados),
+  salvarPonto: (id, dados) => trocar(`/api/pois/${id}`, dados),
+  removerPonto: (id) => remover(`/api/pois/${id}`),
+  enviarFoto: (id, tipo, dados) => trocar(`/api/pois/${id}/foto`, { tipo, dados }),
+  removerFoto: (id) => remover(`/api/pois/${id}/foto`),
+
+  eventos: () => pedir('/api/eventos', { parametros: { todos: true } }),
+  criarEvento: (dados) => criar('/api/eventos', dados),
+  salvarEvento: (id, dados) => trocar(`/api/eventos/${id}`, dados),
+  removerEvento: (id) => remover(`/api/eventos/${id}`),
+
+  avisos: () => pedir('/api/avisos', { parametros: { todos: true } }),
+  criarAviso: (dados) => criar('/api/avisos', dados),
+  salvarAviso: (id, dados) => trocar(`/api/avisos/${id}`, dados),
+  removerAviso: (id) => remover(`/api/avisos/${id}`),
+
+  problemas: (situacao) => pedir('/api/problemas', { parametros: { situacao } }),
+  marcarProblema: (id, situacao) => ajustar(`/api/problemas/${id}`, { situacao }),
+  sugestoes: (situacao) => pedir('/api/sugestoes', { parametros: { situacao } }),
+  marcarSugestao: (id, situacao) => ajustar(`/api/sugestoes/${id}`, { situacao }),
+
+  denunciadas: () => pedir('/api/publicacoes/denunciadas'),
+  ocultarPublicacao: (id, oculta) => ajustar(`/api/publicacoes/${id}`, { oculta }),
+
+  usuarios: () => pedir('/api/usuarios'),
+  mudarUsuario: (id, dados) => ajustar(`/api/usuarios/${id}`, dados),
+}

@@ -10,7 +10,7 @@ import { coordenadaValida, distanciaEmMetros } from '../../compartilhado/distanc
 import type { Ambiente, Ctx } from '../contexto.js'
 import { corpoJson, exigirAdministrador, idDaRota } from '../contexto.js'
 import type { Banco } from '../db/conexao.js'
-import { avaliacoes, avisos, categorias, checkins, eventos, favoritos, pontos, problemas, publicacoes } from '../db/esquema.js'
+import { avaliacoes, avisos, categorias, checkins, eventos, favoritos, fotos, pontos, problemas, publicacoes } from '../db/esquema.js'
 import { ErroHttp } from '../erros.js'
 
 type Ponto = typeof pontos.$inferSelect
@@ -110,7 +110,8 @@ async function valoresDoPonto(c: Ctx) {
     horarioFechamento: dados.horarioFechamento ?? null,
     statusOperacional: dados.statusOperacional ?? 'EM_FUNCIONAMENTO',
     acessivel: dados.acessivel ?? false,
-    fotoUrl: dados.fotoUrl ?? null,
+    // Sem o campo, a foto atual fica: ela é enviada à parte, em /pois/{id}/foto.
+    ...(dados.fotoUrl !== undefined ? { fotoUrl: dados.fotoUrl } : {}),
   }
 }
 
@@ -185,6 +186,7 @@ export const rotasPontos = new Hono<Ambiente>()
     await banco.delete(checkins).where(eq(checkins.poiId, id))
     await banco.delete(favoritos).where(eq(favoritos.poiId, id))
     await banco.delete(problemas).where(eq(problemas.poiId, id))
+    await banco.delete(fotos).where(eq(fotos.poiId, id))
     await banco.update(avisos).set({ poiId: null }).where(eq(avisos.poiId, id))
     await banco.update(publicacoes).set({ poiId: null }).where(eq(publicacoes.poiId, id))
     await banco

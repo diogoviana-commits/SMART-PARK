@@ -33,7 +33,7 @@ const DESTINOS = [
 ]
 
 export default function BarraInferior({ tela, irPara }) {
-  const ativa = tela === 'ajustes' ? 'perfil' : tela
+  const ativa = tela === 'ajustes' || tela === 'admin' ? 'perfil' : tela
   return (
     <nav className="barra-inferior" aria-label="Navegação principal">
       {DESTINOS.map((d) => (

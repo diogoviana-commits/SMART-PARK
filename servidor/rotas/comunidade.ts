@@ -115,13 +115,13 @@ export const rotasDoPonto = new Hono<Ambiente>()
 export const rotasProblemas = new Hono<Ambiente>()
   .get('/', async (c) => {
     exigirAdministrador(c)
-    const situacao = c.req.query('situacao') ?? 'ABERTO'
+    const situacao = z.enum(['ABERTO', 'RESOLVIDO', 'DESCARTADO']).parse(c.req.query('situacao') ?? 'ABERTO')
     const linhas = await c
       .get('banco')
       .select({ p: problemas, poi: pontos.nome })
       .from(problemas)
       .innerJoin(pontos, eq(problemas.poiId, pontos.id))
-      .where(eq(problemas.situacao, situacao as 'ABERTO'))
+      .where(eq(problemas.situacao, situacao))
       .orderBy(desc(problemas.momento))
     return c.json(
       linhas.map(({ p, poi }) => ({

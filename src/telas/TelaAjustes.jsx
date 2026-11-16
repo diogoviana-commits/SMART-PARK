@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { apagarConta, atualizarPerfil, meuPerfil } from '../api.js'
+import { apagarConta, atualizarPerfil, enviarSugestao, meuPerfil, recursos, reenviarConfirmacao } from '../api.js'
 import { Cabecalho } from '../components/Comuns.jsx'
 
 function Alternar({ titulo, descricao, ligado, aoMudar, desabilitado }) {
@@ -14,11 +14,56 @@ function Alternar({ titulo, descricao, ligado, aoMudar, desabilitado }) {
   )
 }
 
+/** RF10: sugestão sobre o parque ou o app, lida pela administração. */
+function Sugestao() {
+  const [texto, setTexto] = useState('')
+  const [estado, setEstado] = useState({ fase: 'editando' })
+
+  async function enviar(evento) {
+    evento.preventDefault()
+    setEstado({ fase: 'enviando' })
+    try {
+      await enviarSugestao(texto)
+      setTexto('')
+      setEstado({ fase: 'enviada' })
+    } catch (e) {
+      setEstado({ fase: 'editando', erro: e.message })
+    }
+  }
+
+  return (
+    <form className="form-sugestao" onSubmit={enviar}>
+      <label className="campo">
+        <span>Enviar uma sugestão</span>
+        <textarea
+          rows={3}
+          minLength={5}
+          maxLength={1000}
+          required
+          placeholder="O que melhoraria o parque ou o app?"
+          value={texto}
+          onChange={(e) => {
+            setTexto(e.target.value)
+            if (estado.fase === 'enviada') setEstado({ fase: 'editando' })
+          }}
+        />
+      </label>
+      {estado.erro && <p className="caixa-erro" role="alert">{estado.erro}</p>}
+      {estado.fase === 'enviada' && <p className="dica" role="status">Sugestão enviada à administração do parque. Obrigado!</p>}
+      <button type="submit" className="botao-secundario" disabled={estado.fase === 'enviando' || texto.trim().length < 5}>
+        {estado.fase === 'enviando' ? 'Enviando…' : 'Enviar sugestão'}
+      </button>
+    </form>
+  )
+}
+
 const PERGUNTAS = [
   ['Preciso de conta para usar?', 'Não. Mapa, rotas, agenda e feed abrem sem conta. A conta (gratuita) é pedida para avaliar, publicar, seguir pessoas e fazer as missões.'],
   ['Como funciona a rota?', 'Toque num ponto e em "Como chegar a pé". A rota segue as trilhas e calçadas do parque, é calculada no seu celular e é refeita se você sair do caminho. Com "Só rotas acessíveis" ligado, ela desvia das escadas.'],
   ['Como registro uma visita?', 'Perto de um ponto (até 30 m), abra Missões e toque em "Registrar visita aqui". Cada ponto conta uma vez por dia.'],
   ['Minha localização fica guardada?', 'Não. A posição é usada no seu aparelho para a rota. Ela só é enviada ao registrar uma visita, para conferir que você está no ponto, e não fica num histórico.'],
+  ['Esqueci minha senha. E agora?', 'Na tela de entrar, toque em "Esqueci minha senha" e informe o seu e-mail. Você recebe um link, válido por 1 hora, para criar uma senha nova.'],
+  ['Como aviso de um problema no parque?', 'No card do ponto, toque na bandeira ("Reportar problema"). Para ideias e sugestões gerais, use "Enviar uma sugestão", aqui em Ajustes.'],
   ['Como instalo o app?', 'No Android, abra o site no Chrome e toque em "Instalar app" no menu. No iPhone, abra no Safari, toque em Compartilhar e depois em "Adicionar à Tela de Início".'],
 ]
 
@@ -33,6 +78,22 @@ export default function TelaAjustes({ sessao, aoPedirLogin, irPara, preferencias
   const [confirmarApagar, setConfirmarApagar] = useState(false)
   const [instalar, setInstalar] = useState(null)
   const instalado = window.matchMedia?.('(display-mode: standalone)').matches
+  const [temEmail, setTemEmail] = useState(false)
+  const [confirmacao, setConfirmacao] = useState(null)
+
+  useEffect(() => {
+    recursos().then((r) => setTemEmail(r.email))
+  }, [])
+
+  async function reenviar() {
+    setConfirmacao({ texto: 'Enviando…' })
+    try {
+      await reenviarConfirmacao()
+      setConfirmacao({ texto: `Enviamos o link para ${sessao.usuario.email}. Ele vale por 48 horas.` })
+    } catch (e) {
+      setConfirmacao({ texto: e.message })
+    }
+  }
 
   useEffect(() => {
     if (!sessao) return
@@ -167,6 +228,28 @@ export default function TelaAjustes({ sessao, aoPedirLogin, irPara, preferencias
                   </button>
                 </span>
               </form>
+              {sessao.usuario.emailConfirmado === false && temEmail && (
+                <div className="ajuste">
+                  <span className="ajuste-texto">
+                    <strong>E-mail não confirmado</strong>
+                    <span role="status">{confirmacao?.texto ?? 'Abra o link que enviamos no cadastro, ou peça um novo.'}</span>
+                  </span>
+                  <button type="button" className="botao-secundario" onClick={reenviar}>
+                    Reenviar
+                  </button>
+                </div>
+              )}
+              {sessao.usuario.perfil === 'ADMINISTRADOR' && (
+                <div className="ajuste">
+                  <span className="ajuste-texto">
+                    <strong>Administração do parque</strong>
+                    <span>Pontos, eventos, avisos, problemas recebidos, contas e relatórios</span>
+                  </span>
+                  <button type="button" className="botao-secundario" onClick={() => irPara('admin')}>
+                    Abrir
+                  </button>
+                </div>
+              )}
               <Alternar
                 titulo="Perfil público"
                 descricao="Aparecer no ranking e poder ser seguido. Desligado, ninguém vê seu perfil."
@@ -213,6 +296,7 @@ export default function TelaAjustes({ sessao, aoPedirLogin, irPara, preferencias
               <p>{r}</p>
             </details>
           ))}
+          {sessao ? <Sugestao /> : <p className="dica">Entre na sua conta para enviar uma sugestão à administração do parque.</p>}
           <button type="button" className="botao-secundario" onClick={aoReverTour}>
             Rever o tour de boas-vindas
           </button>

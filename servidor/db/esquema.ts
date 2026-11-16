@@ -15,6 +15,7 @@ import {
   doublePrecision,
   integer,
   pgTable,
+  text,
   time,
   timestamp,
   varchar,
@@ -42,6 +43,9 @@ export const usuarios = pgTable('tb_usuario', {
   ultimoAcesso: instante('ultimo_acesso'),
   versaoToken: integer('versao_token').notNull().default(0),
   perfilPublico: boolean('perfil_publico').notNull().default(true),
+  bloqueado: boolean('bloqueado').notNull().default(false),
+  emailConfirmado: instante('email_confirmado'),
+  googleId: varchar('google_id', { length: 64 }),
 })
 
 export type StatusOperacional = 'EM_FUNCIONAMENTO' | 'EM_MANUTENCAO' | 'FECHADO'
@@ -186,4 +190,30 @@ export const seguidores = pgTable('tb_seguidor', {
   seguidorId: ref('id_seguidor').notNull(),
   seguidoId: ref('id_seguido').notNull(),
   momento: instante('momento').notNull(),
+})
+
+/** Links enviados por e-mail: redefinir a senha e confirmar o e-mail. Só o hash do código é guardado. */
+export const codigos = pgTable('tb_codigo_conta', {
+  id: id(),
+  usuarioId: ref('id_usuario').notNull(),
+  tipo: varchar('tipo', { length: 10 }).$type<'SENHA' | 'EMAIL'>().notNull(),
+  hash: varchar('hash', { length: 64 }).notNull(),
+  criado: instante('criado').notNull(),
+  expira: instante('expira').notNull(),
+  usado: instante('usado'),
+})
+
+export const sugestoes = pgTable('tb_sugestao', {
+  id: id(),
+  usuarioId: ref('id_usuario').notNull(),
+  texto: varchar('texto', { length: 1000 }).notNull(),
+  situacao: varchar('situacao', { length: 20 }).$type<SituacaoProblema>().notNull(),
+  momento: instante('momento').notNull(),
+})
+
+export const fotos = pgTable('tb_foto_poi', {
+  poiId: ref('id_poi').primaryKey(),
+  tipo: varchar('tipo', { length: 30 }).notNull(),
+  dadosBase64: text('dados_base64').notNull(),
+  atualizado: instante('atualizado').notNull(),
 })

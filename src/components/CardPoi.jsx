@@ -193,6 +193,10 @@ export default function CardPoi({
         </button>
       </div>
 
+      {poi.fotoUrl && (
+        <img className="card-foto" src={poi.fotoUrl} alt={`Foto de ${poi.nome}`} loading="lazy" decoding="async" />
+      )}
+
       {poi.descricao && <p className="card-descricao">{poi.descricao}</p>}
 
       {reportando && <ReportarProblema poi={poi} aoFechar={() => setReportando(false)} />}

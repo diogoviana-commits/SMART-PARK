@@ -8,7 +8,10 @@ import type { Ambiente } from './contexto.js'
 import { autenticar, protecaoCsrf } from './contexto.js'
 import type { Banco } from './db/conexao.js'
 import { corpoDeErro, tratarErro } from './erros.js'
+import { emailDisponivel } from './email.js'
+import { rotasFoto, rotasRelatorios, rotasSugestoes } from './rotas/administracao.js'
 import { rotasAvaliacoes } from './rotas/avaliacoes.js'
+import { googleDisponivel, rotasConta } from './rotas/conta.js'
 import { rotasEventos } from './rotas/eventos.js'
 import { rotasMissoes, rotasVisitas } from './rotas/missoes.js'
 import { rotasCategorias, rotasPontos } from './rotas/pontos.js'
@@ -39,11 +42,15 @@ export function criarApp(banco: Banco, config: Configuracao) {
   app.use('*', autenticar)
 
   app.get('/saude', (c) => c.json({ status: 'ok' }))
+  // O que depende de serviço externo configurado: o site só mostra o que funciona.
+  app.get('/recursos', (c) => c.json({ email: emailDisponivel(config), google: googleDisponivel(config) }))
   app.route('/categorias', rotasCategorias)
   app.route('/pois', rotasPontos)
   app.route('/pois/:poiId{[0-9]+}/avaliacoes', rotasAvaliacoes)
+  app.route('/pois/:poiId{[0-9]+}/foto', rotasFoto)
   app.route('/pois/:poiId{[0-9]+}', rotasDoPonto)
   app.route('/eventos', rotasEventos)
+  app.route('/usuarios', rotasConta)
   app.route('/usuarios', rotasUsuarios)
   app.route('/missoes', rotasMissoes)
   app.route('/visitas', rotasVisitas)
@@ -55,6 +62,8 @@ export function criarApp(banco: Banco, config: Configuracao) {
   app.route('/perfil', rotasPerfil)
   app.route('/perfis', rotasPerfis)
   app.route('/ranking', rotasRanking)
+  app.route('/sugestoes', rotasSugestoes)
+  app.route('/relatorios', rotasRelatorios)
 
   app.notFound((c) => c.json(corpoDeErro(404, 'Rota não encontrada.'), 404))
   app.onError(tratarErro)

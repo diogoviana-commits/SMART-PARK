@@ -14,10 +14,70 @@
 
     <!-- SVG em vez de .ico: um arquivo só, nítido em qualquer tamanho de aba. -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      /* Tela de abertura: fica no ar só enquanto o app carrega, e o React a substitui. */
+      .abertura {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        background: #0f2a1e;
+        color: #f7f4ec;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        text-align: center;
+      }
+      .abertura img {
+        width: 84px;
+        height: 84px;
+        margin-bottom: 10px;
+      }
+      .abertura strong {
+        font-size: 1.7rem;
+        letter-spacing: -0.01em;
+      }
+      .abertura span {
+        color: #e6e0ce;
+      }
+      .abertura i {
+        width: 28px;
+        height: 28px;
+        margin-top: 26px;
+        border: 3px solid rgba(205, 235, 88, 0.3);
+        border-top-color: #cdeb58;
+        border-radius: 50%;
+        animation: abertura-gira 0.9s linear infinite;
+      }
+      .abertura small {
+        margin-top: 10px;
+        color: #e6e0ce;
+      }
+      @keyframes abertura-gira {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .abertura i {
+          animation-duration: 3s;
+        }
+      }
+    </style>
     <title>Smart Park · Chico Mendes</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="abertura" role="status">
+        <img src="/favicon.svg" alt="" />
+        <strong>Smart Park</strong>
+        <span>Espaço Verde Chico Mendes</span>
+        <i aria-hidden="true"></i>
+        <small>Carregando o mapa do parque…</small>
+      </div>
+    </div>
+    <noscript>O Smart Park precisa de JavaScript para mostrar o mapa do parque.</noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
