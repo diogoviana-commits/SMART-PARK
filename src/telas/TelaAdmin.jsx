@@ -26,22 +26,30 @@ const quando = (iso) => (iso ? DATA.format(new Date(iso)) : '')
 /** '2026-11-20T19:00:00' → '2026-11-20T19:00', o formato do campo de data e hora. */
 const paraCampo = (iso) => (iso ? iso.slice(0, 16) : '')
 
-/** Carrega uma lista e devolve como recarregar; erro vira mensagem na tela. */
+/**
+ * Carrega uma lista e devolve como recarregar; erro vira mensagem na tela.
+ *
+ * A lista fica marcada com os filtros que a geraram: ao trocar de filtro (de
+ * problemas para sugestões, por exemplo), a lista antiga some na hora, em vez de
+ * ser desenhada com o formato da nova enquanto ela carrega.
+ */
 function usarLista(carregar, dependencias = []) {
-  const [itens, setItens] = useState(null)
+  const chave = JSON.stringify(dependencias)
+  const [carregada, setCarregada] = useState({ chave: null, itens: null })
   const [erro, setErro] = useState(null)
   const [vez, setVez] = useState(0)
   useEffect(() => {
     let vigente = true
     setErro(null)
     carregar()
-      .then((r) => vigente && setItens(r))
+      .then((r) => vigente && setCarregada({ chave, itens: r }))
       .catch((e) => vigente && setErro(e.message))
     return () => {
       vigente = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vez, ...dependencias])
+  }, [vez, chave])
+  const itens = carregada.chave === chave ? carregada.itens : null
   return { itens, erro, recarregar: useCallback(() => setVez((n) => n + 1), []) }
 }
 
